@@ -33,7 +33,9 @@ With this method, you can install the plugin directly from the source code using
 go install github.com/Izzette/kubectl-api-resource-versions/cmd/kubectl-api_resource_versions@latest
 
 # Optionally install the completion script to your $GOPATH/bin
-curl -sSfLo "$(go env GOHOME)/bin/kubectl_complete-api_resource_versions" https://raw.githubusercontent.com/Izzette/kubectl-api-resource-versions/main/kubectl_complete-api_resource_versions
+curl -fLo "$(go env GOPATH)/bin/kubectl_complete-api_resource_versions" \
+  https://raw.githubusercontent.com/Izzette/kubectl-api-resource-versions/refs/heads/main/kubectl_complete-api_resource_versions
+chmod +x "$(go env GOPATH)/bin/kubectl_complete-api_resource_versions"
 ```
 
 ### Manual Installation
