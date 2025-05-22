@@ -6,6 +6,8 @@ A kubectl plugin that combines functionality from `kubectl api-resources` and `k
 
 [![Go Version](https://img.shields.io/badge/go-1.24-blue)]() [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE) <!--[![Go Report Card](https://goreportcard.com/badge/github.com/Izzette/kubectl-api-resource-versions)](https://goreportcard.com/report/github.com/Izzette/kubectl-api-resource-versions)-->
 
+---
+
 ## Features
 
 - List API resources with their available group versions in a single view
@@ -14,6 +16,66 @@ A kubectl plugin that combines functionality from `kubectl api-resources` and `k
 - Sorting by resource name or kind
 - Works with any Kubernetes cluster (v1.20+)
 - Supports in-cluster and out-of-cluster configurations
+
+## Why?
+
+The `kubectl api-resources` command provides a list of API resources, but it doesn't show the available group versions for each resource.
+It only shows the preferred version, which is likely the most up-to-date or stable version ... but not necessarily the only one.
+
+Imagine you're looking to list all your `secretstores.external-secrets.io` and you're running External Secrets Operator v0.16.2.
+You might think that you'll see all the resources of the soon-to-be-removed `v1beta1` version API version for the `external-secrets.io` group just by doing: `kubectl get --all-namespaces secretstores.external-secrets.io --output json`.
+But you won't, because the `v1beta1` version is not the preferred version and `kubectl` will only show you the resources of the preferred version when doing a list!
+In fact, in this case, you'll only see the resources of the `v1` version, which is the preferred version for External Secrets Operator v0.16.2.
+
+On the other hand, `kubectl api-versions` lists all available API versions but doesn't provide information about the resources associated with those versions.
+So surely you can just combine the two commands to get the information you need, right?
+Well, kind of.
+But there's no way to know between the two commands which resources are available for each API version.
+So you'll have to exhaustively check each of them exist by doing a `kubectl get` for each of them, and seeing which one raises an error.
+That is, assuming, it's possible to list said resource in the first place.
+
+At any rate, combining the two commands is not very efficient ... and it's not pretty either.
+See my attempt at doing so (only works in zsh BTW):
+
+```shell
+typeset -A api_versions=()
+while IFS=/ read -r api_group version <&3; do
+  if ! [[ $api_group =~ ^(.*\.)?external-secrets.io$ ]]; then
+    continue
+  fi
+
+  if [[ -n ${api_versions[$api_group]} ]]; then
+    api_versions[$api_group]+=" "
+  fi
+  api_versions[$api_group]+="$version"
+done 3< <(kubectl api-versions)
+
+while IFS=. read -r resource api_group <&3; do
+  if [[ -z ${api_versions[$api_group]} ]]; then
+    continue
+  fi
+
+  for version in $(printf '%s\n' "${api_versions[$api_group]}"); do
+    kubectl get --all-namespaces --output json "$resource.$version.$api_group"
+  done
+done 3< <(kubectl api-resources --verbs get,list --output name --namespaced="$namespaced")
+```
+
+It could probably be simplified (and there's more than one performance issue), but wow, what the actual fuck, right? 💢😡
+And it STILL prints errors to stderr for resources that don't exist at a specific version!
+
+I guess I should have used `kubent` to begin with ... but there is clearly a hole in the tooling provided by `kubectl` to do what seems like something rather simple:
+listing _all_ API versions of my resources.
+
+&lt;/rant&gt;
+
+Voilà, I wasted my day on this.
+I hope it's useful for you:
+
+```shell
+kubectl api-resource-versions --api-group external-secrets.io --verbs get,list --output name |
+  xargs -n1 kubectl get --all-namespaces --output json
+```
 
 ## Installation
 
