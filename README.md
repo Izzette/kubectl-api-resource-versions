@@ -156,7 +156,7 @@ kubectl api-resource-versions --namespaced='false'
 
 Show output in kubectl `name` format, and list those resources:
 ```shell
-kubectl api-resource-versions --api-group='apps' --verbs='list,get' --namespaced='false' --output='name' |
+kubectl api-resource-versions --api-group='apps' --verbs='list,get' --output='name' |
   xargs -n1 kubectl get --show-kind
 ```
 
