@@ -1,0 +1,35 @@
+---
+name: Go build and test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: Build
+        run: make buildable
+
+      - name: Test Unit
+        run: make test-unit
+
+      - name: Run testable examples
+        run: make test-examples
+
+      - name: Benchmark
+        run: make benchmark
+
+      - name: Test flakiness
+        run: make test-flakiness

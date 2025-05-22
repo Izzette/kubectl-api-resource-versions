@@ -1,0 +1,57 @@
+version: "2"
+linters:
+  default: all
+  disable:
+    - depguard
+    - exhaustruct
+    - godox
+    - ireturn
+    - inamedparam
+    - nolintlint
+    - paralleltest
+    - testpackage
+    - wsl
+  settings:
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+    staticcheck:
+      checks:
+        - all
+        - -ST1000
+    forbidigo:
+      forbid:
+        - pattern: ^print(ln)?$|^fmt\.Print(|f|ln)$
+          msg: print statements should not be committed
+        - pattern: ^context.Context.Err$
+          msg: >-
+            using context.Context.Err() directly shadows cause, instead use
+            context.Cause()
+      analyze-types: true
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - funlen
+          - gosec
+          - varnamelen
+          - prealloc
+          - err113
+          - wrapcheck
+          - goconst
+        path: (.+)_test.go
+    paths:
+      - ^(.*/)?third_party(/.*)?$
+      - ^(.*/)?builtin(/.*)?$
+      - ^(.*/)?examples(/.*)?$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - ^(.*/)?third_party(/.*)?$
+      - ^(.*/)?builtin(/.*)?$

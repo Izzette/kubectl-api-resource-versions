@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [[ $# -le 0 ]]; then
+  # Give all options if no arguments are passed.
+  set -- -
+fi
+
+# Use Cobra's builtin completion system.
+env -u KUBE_NS -u KUBE_CTX kubectl api-resource-versions __complete "$@"
