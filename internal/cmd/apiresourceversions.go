@@ -155,7 +155,7 @@ func (gr groupResource) Preferred() bool {
 	return gr.APIGroup.PreferredVersion.Version == gr.APIGroupVersion.Version
 }
 
-// fullname returns the name of the resource with it's version and api group in the format expected by kubectl.
+// fullname returns the name of the resource with its version and api group in the format expected by kubectl.
 func (gr groupResource) fullname() string {
 	return fmt.Sprintf("%s.%s.%s", gr.APIResource.Name, gr.APIGroupVersion.Version, gr.APIGroup.Name)
 }
