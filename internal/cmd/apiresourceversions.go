@@ -146,18 +146,18 @@ func newAPIResourceVersionsOptions(ioStreams genericiooptions.IOStreams) *apiRes
 // groupResource is represents a versioned API resource.
 type groupResource struct {
 	APIGroup        *metav1.APIGroup
-	APIGroupVersion string
+	APIGroupVersion *metav1.GroupVersionForDiscovery
 	APIResource     metav1.APIResource
 }
 
-// Preferred returns true if the version is the preferred version for the resource.
+// Preferred returns true if the version is the preferred version for the API group.
 func (gr groupResource) Preferred() bool {
-	return gr.APIGroup.PreferredVersion.Version == gr.APIGroupVersion
+	return gr.APIGroup.PreferredVersion.Version == gr.APIGroupVersion.Version
 }
 
-// fullname returns the name of the resource with it's version and api group in the format expected by kubectl.
+// fullname returns the name of the resource with its version and api group in the format expected by kubectl.
 func (gr groupResource) fullname() string {
-	return fmt.Sprintf("%s.%s.%s", gr.APIResource.Name, gr.APIGroupVersion, gr.APIGroup.Name)
+	return fmt.Sprintf("%s.%s.%s", gr.APIResource.Name, gr.APIGroupVersion.Version, gr.APIGroup.Name)
 }
 
 // errWrongOutput is a returned when the output format is not supported.
@@ -249,7 +249,7 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 			for _, apiResource := range resourceList.APIResources {
 				resource := groupResource{
 					APIGroup:        &group,
-					APIGroupVersion: version.Version,
+					APIGroupVersion: &version,
 					APIResource:     apiResource,
 				}
 
@@ -355,7 +355,7 @@ func printGroupResourcesWide(writer io.Writer, resource groupResource) error {
 	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%v\t%s\t%v\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
-		resource.APIGroupVersion,
+		resource.APIGroupVersion.GroupVersion,
 		resource.APIResource.Namespaced,
 		resource.APIResource.Kind,
 		resource.Preferred(),
@@ -373,7 +373,7 @@ func printGroupResourcesDefault(writer io.Writer, resource groupResource) error 
 	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%v\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
-		resource.APIGroupVersion,
+		resource.APIGroupVersion.GroupVersion,
 		resource.APIResource.Namespaced,
 		resource.APIResource.Kind,
 		resource.Preferred(),
