@@ -3,7 +3,7 @@
 ##############
 
 # Binary built with `make build` or `go build ./cmd/kubectl-api-resource-versions`
-/kubectl-api-resource-versions
+/kubectl-api_resource_versions
 
 ##############
 ## Go stuff ##

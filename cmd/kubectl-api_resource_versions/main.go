@@ -1,3 +1,5 @@
+// main package for the kubectl api-resource-versions command.
+// See [github.com/Izzette/kubectl-api-resource-versions] for more information.
 package main
 
 import (
