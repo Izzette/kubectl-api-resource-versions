@@ -66,9 +66,8 @@ func getResources(resourcesYAML []byte) []*metav1.APIResourceList {
 	resourcesYAMLBuf := bytes.NewBuffer(resourcesYAML)
 
 	resources := make([]*metav1.APIResourceList, 0)
-	// TODO(Izzette): use rangefunc
-	yamlutil.YAMLDocumentsToJSON(resourcesYAMLBuf)(func(document yamlutil.YAMLToJSON) bool {
-		decoder, err := document.GetDecoder()
+	for result := range yamlutil.YAMLDocumentsToJSON(resourcesYAMLBuf) {
+		decoder, err := result.GetDecoder()
 		if err != nil {
 			panic(err)
 		}
@@ -76,16 +75,14 @@ func getResources(resourcesYAML []byte) []*metav1.APIResourceList {
 		resource := &metav1.APIResourceList{}
 		if err := decoder.Decode(&resource); err != nil {
 			if err == io.EOF {
-				return false // End of resources
+				break // End of resources
 			}
 
 			panic(fmt.Errorf("failed to decode resources: %w", err))
 		}
 
 		resources = append(resources, resource)
-
-		return true
-	})
+	}
 
 	return resources
 }
