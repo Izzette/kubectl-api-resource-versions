@@ -46,7 +46,7 @@ func YAMLDocumentsToJSON(yamlStream io.Reader) iter.Seq[YAMLToJSON] {
 				err = fmt.Errorf("failed to decode YAML document: %w", err)
 				yield(&yamlToJSONErr{err: err})
 
-				break // We can't continue if we can't decode the document, as we won't nessarily be able to find the next one.
+				break // We can't continue if we can't decode the document, as we won't necessarily be able to find the next one.
 			}
 
 			jsonBytes, err := json.Marshal(doc)
