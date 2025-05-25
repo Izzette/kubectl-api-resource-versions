@@ -146,18 +146,25 @@ func newAPIResourceVersionsOptions(ioStreams genericiooptions.IOStreams) *apiRes
 // groupResource is represents a versioned API resource.
 type groupResource struct {
 	APIGroup        *metav1.APIGroup
-	APIGroupVersion *metav1.GroupVersionForDiscovery
-	APIResource     metav1.APIResource
+	APIGroupVersion string
+	APIResource     *metav1.APIResource
 }
 
 // Preferred returns true if the version is the preferred version for the API group.
 func (gr groupResource) Preferred() bool {
-	return gr.APIGroup.PreferredVersion.Version == gr.APIGroupVersion.Version
+	return gr.APIGroup.PreferredVersion.GroupVersion == gr.APIGroupVersion
 }
 
 // fullname returns the name of the resource with its version and api group in the format expected by kubectl.
 func (gr groupResource) fullname() string {
-	return fmt.Sprintf("%s.%s.%s", gr.APIResource.Name, gr.APIGroupVersion.Version, gr.APIGroup.Name)
+	groupVersion, err := schema.ParseGroupVersion(gr.APIGroupVersion)
+	if err != nil {
+		panic(fmt.Errorf("error parsing group version: %w", err))
+	} else if groupVersion.Group != gr.APIGroup.Name {
+		panic(fmt.Sprintf("group version %s does not match group %s", groupVersion.Group, gr.APIGroup.Name))
+	}
+
+	return fmt.Sprintf("%s.%s.%s", gr.APIResource.Name, groupVersion.Version, gr.APIGroup.Name)
 }
 
 // errWrongOutput is a returned when the output format is not supported.
@@ -235,22 +242,35 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 		return []groupResource{}, fmt.Errorf("couldn't get server groups: %w", err)
 	}
 
-	// TODO(Izzette): we could quickly calculate the total number of resources in the server groups to avoid having to
-	// re-size the underlying slice-buffer during an append operation.
+	// We could quickly calculate the total number of resources in the server groups to avoid having to re-size the
+	// underlying slice-buffer during an append operation.
+	// However, when the number of resources is large, this could result in very high memory usage even when heavily
+	// filtering the group resources.
 	resources := make([]groupResource, 0)
-	for _, group := range groupList.Groups {
+	for i := range groupList.Groups {
+		group := &groupList.Groups[i]
+
+		if excludeGroup(group, options) {
+			// If the group is excluded, we skip it.
+			continue
+		}
+
 		for _, version := range group.Versions {
-			groupVersion := schema.GroupVersion{Group: group.Name, Version: version.Version}
-			resourceList, err := options.discoveryClient.ServerResourcesForGroupVersion(groupVersion.String())
+			if excludeGroupVersion(group, version.GroupVersion, options) {
+				// If the group version is excluded, we skip it.
+				continue
+			}
+
+			resourceList, err := options.discoveryClient.ServerResourcesForGroupVersion(version.GroupVersion)
 			if err != nil {
-				return nil, fmt.Errorf("couldn't get server resources for group version %s: %w", groupVersion.String(), err)
+				return nil, fmt.Errorf("couldn't get server resources for group version %s: %w", version.GroupVersion, err)
 			}
 
 			for _, apiResource := range resourceList.APIResources {
 				resource := groupResource{
-					APIGroup:        &group,
-					APIGroupVersion: &version,
-					APIResource:     apiResource,
+					APIGroup:        group,
+					APIGroupVersion: version.GroupVersion,
+					APIResource:     &apiResource,
 				}
 
 				if !excludeGroupResource(resource, options) {
@@ -263,6 +283,25 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 	return resources, nil
 }
 
+// excludeGroup checks if the group should be excluded based on the options.
+func excludeGroup(group *metav1.APIGroup, options *apiResourceVersionsOptions) bool {
+	if options.groupChanged && options.APIGroup != group.Name {
+		return true
+	}
+
+	return false
+}
+
+// excludeGroupVersion checks if the group version should be excluded based on the options.
+func excludeGroupVersion(group *metav1.APIGroup, groupVersion string, options *apiResourceVersionsOptions) bool {
+	isPreferred := group.PreferredVersion.GroupVersion == groupVersion
+	if options.preferredChanged && options.Preferred != isPreferred {
+		return true
+	}
+
+	return false
+}
+
 // excludeGroupResource checks if the resource should be excluded based on the options.
 //
 //nolint:cyclop
@@ -272,9 +311,6 @@ func excludeGroupResource(resource groupResource, options *apiResourceVersionsOp
 		return true
 	}
 
-	if options.groupChanged && options.APIGroup != resource.APIGroup.Name {
-		return true
-	}
 	if options.nsChanged && options.Namespaced != resource.APIResource.Namespaced {
 		return true
 	}
@@ -355,7 +391,7 @@ func printGroupResourcesWide(writer io.Writer, resource groupResource) error {
 	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%v\t%s\t%v\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
-		resource.APIGroupVersion.GroupVersion,
+		resource.APIGroupVersion,
 		resource.APIResource.Namespaced,
 		resource.APIResource.Kind,
 		resource.Preferred(),
@@ -373,7 +409,7 @@ func printGroupResourcesDefault(writer io.Writer, resource groupResource) error 
 	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%v\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
-		resource.APIGroupVersion.GroupVersion,
+		resource.APIGroupVersion,
 		resource.APIResource.Namespaced,
 		resource.APIResource.Kind,
 		resource.Preferred(),
@@ -417,7 +453,7 @@ func (s sortableResource) Less(i, j int) bool {
 	case kindSortBy:
 		return left.APIResource.Kind < right.APIResource.Kind
 	default:
-		if left.APIGroup != right.APIGroup {
+		if left.APIGroup.Name != right.APIGroup.Name {
 			return left.APIGroup.Name < right.APIGroup.Name
 		}
 
