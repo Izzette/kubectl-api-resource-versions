@@ -4,8 +4,8 @@ go 1.24.3
 
 require (
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de
-	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/cobra v1.10.1
+	github.com/spf13/pflag v1.0.9
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/apimachinery v0.34.0
 	k8s.io/cli-runtime v0.33.4
