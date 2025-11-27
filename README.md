@@ -188,11 +188,9 @@ secrets                               v1           true         Secret          
 serviceaccounts          sa           v1           true         ServiceAccount          true
 services                 svc          v1           true         Service                 true
 $ kubectl api-resource-versions --api-group='admissionregistration.k8s.io'
-NAME                                SHORTNAMES   APIVERSION                        NAMESPACED   KIND                               PREFERRED
-mutatingwebhookconfigurations                    admissionregistration.k8s.io/v1   false        MutatingWebhookConfiguration       true
-validatingadmissionpolicies                      admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicy          true
-validatingadmissionpolicybindings                admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicyBinding   true
-validatingwebhookconfigurations                  admissionregistration.k8s.io/v1   false        ValidatingWebhookConfiguration     true
+NAME                              SHORTNAMES   APIVERSION                        NAMESPACED   KIND                             PREFERRED
+mutatingwebhookconfigurations                  admissionregistration.k8s.io/v1   false        MutatingWebhookConfiguration     true
+validatingwebhookconfigurations                admissionregistration.k8s.io/v1   false        ValidatingWebhookConfiguration   true
 $ kubectl api-resource-versions --api-group='apiextensions.k8s.io'
 NAME                        SHORTNAMES   APIVERSION                NAMESPACED   KIND                       PREFERRED
 customresourcedefinitions   crd,crds     apiextensions.k8s.io/v1   false        CustomResourceDefinition   true
@@ -207,9 +205,8 @@ deployments           deploy       apps/v1      true         Deployment         
 replicasets           rs           apps/v1      true         ReplicaSet           true
 statefulsets          sts          apps/v1      true         StatefulSet          true
 $ kubectl api-resource-versions --api-group='authentication.k8s.io'
-NAME                 SHORTNAMES   APIVERSION                 NAMESPACED   KIND                PREFERRED
-selfsubjectreviews                authentication.k8s.io/v1   false        SelfSubjectReview   true
-tokenreviews                      authentication.k8s.io/v1   false        TokenReview         true
+NAME           SHORTNAMES   APIVERSION                 NAMESPACED   KIND          PREFERRED
+tokenreviews                authentication.k8s.io/v1   false        TokenReview   true
 $ kubectl api-resource-versions --api-group='authorization.k8s.io'
 NAME                        SHORTNAMES   APIVERSION                NAMESPACED   KIND                       PREFERRED
 localsubjectaccessreviews                authorization.k8s.io/v1   true         LocalSubjectAccessReview   true
@@ -217,13 +214,10 @@ selfsubjectaccessreviews                 authorization.k8s.io/v1   false        
 selfsubjectrulesreviews                  authorization.k8s.io/v1   false        SelfSubjectRulesReview     true
 subjectaccessreviews                     authorization.k8s.io/v1   false        SubjectAccessReview        true
 $ kubectl api-resource-versions --api-group='autoscaling'
-NAME                       SHORTNAMES   APIVERSION       NAMESPACED   KIND                      PREFERRED
-horizontalpodautoscalers   hpa          autoscaling/v2   true         HorizontalPodAutoscaler   true
-horizontalpodautoscalers   hpa          autoscaling/v1   true         HorizontalPodAutoscaler   false
-$ kubectl api-resource-versions --api-group='autoscaling.x-k8s.io'
-NAME                   SHORTNAMES         APIVERSION                     NAMESPACED   KIND                  PREFERRED
-provisioningrequests   provreq,provreqs   autoscaling.x-k8s.io/v1        true         ProvisioningRequest   true
-provisioningrequests   provreq,provreqs   autoscaling.x-k8s.io/v1beta1   true         ProvisioningRequest   false
+NAME                       SHORTNAMES   APIVERSION            NAMESPACED   KIND                      PREFERRED
+horizontalpodautoscalers   hpa          autoscaling/v2        true         HorizontalPodAutoscaler   true
+horizontalpodautoscalers   hpa          autoscaling/v1        true         HorizontalPodAutoscaler   false
+horizontalpodautoscalers   hpa          autoscaling/v2beta2   true         HorizontalPodAutoscaler   false
 $ kubectl api-resource-versions --api-group='batch'
 NAME       SHORTNAMES   APIVERSION   NAMESPACED   KIND      PREFERRED
 cronjobs   cj           batch/v1     true         CronJob   true
@@ -241,22 +235,11 @@ $ kubectl api-resource-versions --api-group='events.k8s.io'
 NAME     SHORTNAMES   APIVERSION         NAMESPACED   KIND    PREFERRED
 events   ev           events.k8s.io/v1   true         Event   true
 $ kubectl api-resource-versions --api-group='flowcontrol.apiserver.k8s.io'
-NAME                          SHORTNAMES   APIVERSION                        NAMESPACED   KIND                         PREFERRED
-flowschemas                                flowcontrol.apiserver.k8s.io/v1   false        FlowSchema                   true
-prioritylevelconfigurations                flowcontrol.apiserver.k8s.io/v1   false        PriorityLevelConfiguration   true
-$ kubectl api-resource-versions --api-group='gateway.networking.k8s.io'
-NAME              SHORTNAMES   APIVERSION                          NAMESPACED   KIND             PREFERRED
-gatewayclasses    gc           gateway.networking.k8s.io/v1        false        GatewayClass     true
-gatewayclasses    gc           gateway.networking.k8s.io/v1beta1   false        GatewayClass     false
-gateways          gtw          gateway.networking.k8s.io/v1        true         Gateway          true
-gateways          gtw          gateway.networking.k8s.io/v1beta1   true         Gateway          false
-httproutes                     gateway.networking.k8s.io/v1        true         HTTPRoute        true
-httproutes                     gateway.networking.k8s.io/v1beta1   true         HTTPRoute        false
-referencegrants   refgrant     gateway.networking.k8s.io/v1beta1   true         ReferenceGrant   false
-$ kubectl api-resource-versions --api-group='metrics.k8s.io'
-NAME    SHORTNAMES   APIVERSION               NAMESPACED   KIND          PREFERRED
-nodes                metrics.k8s.io/v1beta1   false        NodeMetrics   true
-pods                 metrics.k8s.io/v1beta1   true         PodMetrics    true
+NAME                          SHORTNAMES   APIVERSION                             NAMESPACED   KIND                         PREFERRED
+flowschemas                                flowcontrol.apiserver.k8s.io/v1beta2   false        FlowSchema                   true
+flowschemas                                flowcontrol.apiserver.k8s.io/v1beta1   false        FlowSchema                   false
+prioritylevelconfigurations                flowcontrol.apiserver.k8s.io/v1beta2   false        PriorityLevelConfiguration   true
+prioritylevelconfigurations                flowcontrol.apiserver.k8s.io/v1beta1   false        PriorityLevelConfiguration   false
 $ kubectl api-resource-versions --api-group='networking.k8s.io'
 NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND            PREFERRED
 ingressclasses                 networking.k8s.io/v1   false        IngressClass    true
@@ -277,21 +260,14 @@ roles                              rbac.authorization.k8s.io/v1   true         R
 $ kubectl api-resource-versions --api-group='scheduling.k8s.io'
 NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND            PREFERRED
 priorityclasses   pc           scheduling.k8s.io/v1   false        PriorityClass   true
-$ kubectl api-resource-versions --api-group='snapshot.storage.k8s.io'
-NAME                     SHORTNAMES          APIVERSION                        NAMESPACED   KIND                    PREFERRED
-volumesnapshotclasses    vsclass,vsclasses   snapshot.storage.k8s.io/v1        false        VolumeSnapshotClass     true
-volumesnapshotclasses    vsclass,vsclasses   snapshot.storage.k8s.io/v1beta1   false        VolumeSnapshotClass     false
-volumesnapshotcontents   vsc,vscs            snapshot.storage.k8s.io/v1        false        VolumeSnapshotContent   true
-volumesnapshotcontents   vsc,vscs            snapshot.storage.k8s.io/v1beta1   false        VolumeSnapshotContent   false
-volumesnapshots          vs                  snapshot.storage.k8s.io/v1        true         VolumeSnapshot          true
-volumesnapshots          vs                  snapshot.storage.k8s.io/v1beta1   true         VolumeSnapshot          false
 $ kubectl api-resource-versions --api-group='storage.k8s.io'
-NAME                   SHORTNAMES   APIVERSION          NAMESPACED   KIND                 PREFERRED
-csidrivers                          storage.k8s.io/v1   false        CSIDriver            true
-csinodes                            storage.k8s.io/v1   false        CSINode              true
-csistoragecapacities                storage.k8s.io/v1   true         CSIStorageCapacity   true
-storageclasses         sc           storage.k8s.io/v1   false        StorageClass         true
-volumeattachments                   storage.k8s.io/v1   false        VolumeAttachment     true
+NAME                   SHORTNAMES   APIVERSION               NAMESPACED   KIND                 PREFERRED
+csidrivers                          storage.k8s.io/v1        false        CSIDriver            true
+csinodes                            storage.k8s.io/v1        false        CSINode              true
+csistoragecapacities                storage.k8s.io/v1        true         CSIStorageCapacity   true
+csistoragecapacities                storage.k8s.io/v1beta1   true         CSIStorageCapacity   false
+storageclasses         sc           storage.k8s.io/v1        false        StorageClass         true
+volumeattachments                   storage.k8s.io/v1        false        VolumeAttachment     true
 ```
 </details>
 
@@ -300,129 +276,105 @@ volumeattachments                   storage.k8s.io/v1   false        VolumeAttac
 
 ```console
 $ kubectl api-resource-versions --api-group='' --output='wide'
-NAME                     SHORTNAMES   APIVERSION   NAMESPACED   KIND                    PREFERRED   VERBS                                                        CATEGORIES
-bindings                              v1           true         Binding                 true        create
-componentstatuses        cs           v1           false        ComponentStatus         true        get,list
-configmaps               cm           v1           true         ConfigMap               true        create,delete,deletecollection,get,list,patch,update,watch
-endpoints                ep           v1           true         Endpoints               true        create,delete,deletecollection,get,list,patch,update,watch
-events                   ev           v1           true         Event                   true        create,delete,deletecollection,get,list,patch,update,watch
-limitranges              limits       v1           true         LimitRange              true        create,delete,deletecollection,get,list,patch,update,watch
-namespaces               ns           v1           false        Namespace               true        create,delete,get,list,patch,update,watch
-nodes                    no           v1           false        Node                    true        create,delete,deletecollection,get,list,patch,update,watch
-persistentvolumeclaims   pvc          v1           true         PersistentVolumeClaim   true        create,delete,deletecollection,get,list,patch,update,watch
-persistentvolumes        pv           v1           false        PersistentVolume        true        create,delete,deletecollection,get,list,patch,update,watch
-pods                     po           v1           true         Pod                     true        create,delete,deletecollection,get,list,patch,update,watch   all
-podtemplates                          v1           true         PodTemplate             true        create,delete,deletecollection,get,list,patch,update,watch
-replicationcontrollers   rc           v1           true         ReplicationController   true        create,delete,deletecollection,get,list,patch,update,watch   all
-resourcequotas           quota        v1           true         ResourceQuota           true        create,delete,deletecollection,get,list,patch,update,watch
-secrets                               v1           true         Secret                  true        create,delete,deletecollection,get,list,patch,update,watch
-serviceaccounts          sa           v1           true         ServiceAccount          true        create,delete,deletecollection,get,list,patch,update,watch
-services                 svc          v1           true         Service                 true        create,delete,deletecollection,get,list,patch,update,watch   all
+NAME                     SHORTNAMES   APIVERSION   NAMESPACED   KIND                    PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+bindings                              v1           true         Binding                 true        true             create
+componentstatuses        cs           v1           false        ComponentStatus         true        true             get,list
+configmaps               cm           v1           true         ConfigMap               true        true             create,delete,deletecollection,get,list,patch,update,watch
+endpoints                ep           v1           true         Endpoints               true        true             create,delete,deletecollection,get,list,patch,update,watch
+events                   ev           v1           true         Event                   true        true             create,delete,deletecollection,get,list,patch,update,watch
+limitranges              limits       v1           true         LimitRange              true        true             create,delete,deletecollection,get,list,patch,update,watch
+namespaces               ns           v1           false        Namespace               true        true             create,delete,get,list,patch,update,watch
+nodes                    no           v1           false        Node                    true        true             create,delete,deletecollection,get,list,patch,update,watch
+persistentvolumeclaims   pvc          v1           true         PersistentVolumeClaim   true        true             create,delete,deletecollection,get,list,patch,update,watch
+persistentvolumes        pv           v1           false        PersistentVolume        true        true             create,delete,deletecollection,get,list,patch,update,watch
+pods                     po           v1           true         Pod                     true        true             create,delete,deletecollection,get,list,patch,update,watch   all
+podtemplates                          v1           true         PodTemplate             true        true             create,delete,deletecollection,get,list,patch,update,watch
+replicationcontrollers   rc           v1           true         ReplicationController   true        true             create,delete,deletecollection,get,list,patch,update,watch   all
+resourcequotas           quota        v1           true         ResourceQuota           true        true             create,delete,deletecollection,get,list,patch,update,watch
+secrets                               v1           true         Secret                  true        true             create,delete,deletecollection,get,list,patch,update,watch
+serviceaccounts          sa           v1           true         ServiceAccount          true        true             create,delete,deletecollection,get,list,patch,update,watch
+services                 svc          v1           true         Service                 true        true             create,delete,deletecollection,get,list,patch,update,watch   all
 $ kubectl api-resource-versions --api-group='admissionregistration.k8s.io' --output='wide'
-NAME                                SHORTNAMES   APIVERSION                        NAMESPACED   KIND                               PREFERRED   VERBS                                                        CATEGORIES
-mutatingwebhookconfigurations                    admissionregistration.k8s.io/v1   false        MutatingWebhookConfiguration       true        create,delete,deletecollection,get,list,patch,update,watch   api-extensions
-validatingadmissionpolicies                      admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicy          true        create,delete,deletecollection,get,list,patch,update,watch   api-extensions
-validatingadmissionpolicybindings                admissionregistration.k8s.io/v1   false        ValidatingAdmissionPolicyBinding   true        create,delete,deletecollection,get,list,patch,update,watch   api-extensions
-validatingwebhookconfigurations                  admissionregistration.k8s.io/v1   false        ValidatingWebhookConfiguration     true        create,delete,deletecollection,get,list,patch,update,watch   api-extensions
+NAME                              SHORTNAMES   APIVERSION                        NAMESPACED   KIND                             PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+mutatingwebhookconfigurations                  admissionregistration.k8s.io/v1   false        MutatingWebhookConfiguration     true        true             create,delete,deletecollection,get,list,patch,update,watch   api-extensions
+validatingwebhookconfigurations                admissionregistration.k8s.io/v1   false        ValidatingWebhookConfiguration   true        true             create,delete,deletecollection,get,list,patch,update,watch   api-extensions
 $ kubectl api-resource-versions --api-group='apiextensions.k8s.io' --output='wide'
-NAME                        SHORTNAMES   APIVERSION                NAMESPACED   KIND                       PREFERRED   VERBS                                                        CATEGORIES
-customresourcedefinitions   crd,crds     apiextensions.k8s.io/v1   false        CustomResourceDefinition   true        create,delete,deletecollection,get,list,patch,update,watch   api-extensions
+NAME                        SHORTNAMES   APIVERSION                NAMESPACED   KIND                       PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+customresourcedefinitions   crd,crds     apiextensions.k8s.io/v1   false        CustomResourceDefinition   true        true             create,delete,deletecollection,get,list,patch,update,watch   api-extensions
 $ kubectl api-resource-versions --api-group='apiregistration.k8s.io' --output='wide'
-NAME          SHORTNAMES   APIVERSION                  NAMESPACED   KIND         PREFERRED   VERBS                                                        CATEGORIES
-apiservices                apiregistration.k8s.io/v1   false        APIService   true        create,delete,deletecollection,get,list,patch,update,watch   api-extensions
+NAME          SHORTNAMES   APIVERSION                  NAMESPACED   KIND         PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+apiservices                apiregistration.k8s.io/v1   false        APIService   true        true             create,delete,deletecollection,get,list,patch,update,watch   api-extensions
 $ kubectl api-resource-versions --api-group='apps' --output='wide'
-NAME                  SHORTNAMES   APIVERSION   NAMESPACED   KIND                 PREFERRED   VERBS                                                        CATEGORIES
-controllerrevisions                apps/v1      true         ControllerRevision   true        create,delete,deletecollection,get,list,patch,update,watch
-daemonsets            ds           apps/v1      true         DaemonSet            true        create,delete,deletecollection,get,list,patch,update,watch   all
-deployments           deploy       apps/v1      true         Deployment           true        create,delete,deletecollection,get,list,patch,update,watch   all
-replicasets           rs           apps/v1      true         ReplicaSet           true        create,delete,deletecollection,get,list,patch,update,watch   all
-statefulsets          sts          apps/v1      true         StatefulSet          true        create,delete,deletecollection,get,list,patch,update,watch   all
+NAME                  SHORTNAMES   APIVERSION   NAMESPACED   KIND                 PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+controllerrevisions                apps/v1      true         ControllerRevision   true        true             create,delete,deletecollection,get,list,patch,update,watch
+daemonsets            ds           apps/v1      true         DaemonSet            true        true             create,delete,deletecollection,get,list,patch,update,watch   all
+deployments           deploy       apps/v1      true         Deployment           true        true             create,delete,deletecollection,get,list,patch,update,watch   all
+replicasets           rs           apps/v1      true         ReplicaSet           true        true             create,delete,deletecollection,get,list,patch,update,watch   all
+statefulsets          sts          apps/v1      true         StatefulSet          true        true             create,delete,deletecollection,get,list,patch,update,watch   all
 $ kubectl api-resource-versions --api-group='authentication.k8s.io' --output='wide'
-NAME                 SHORTNAMES   APIVERSION                 NAMESPACED   KIND                PREFERRED   VERBS    CATEGORIES
-selfsubjectreviews                authentication.k8s.io/v1   false        SelfSubjectReview   true        create
-tokenreviews                      authentication.k8s.io/v1   false        TokenReview         true        create
+NAME           SHORTNAMES   APIVERSION                 NAMESPACED   KIND          PREFERRED   GROUPPREFERRED   VERBS    CATEGORIES
+tokenreviews                authentication.k8s.io/v1   false        TokenReview   true        true             create
 $ kubectl api-resource-versions --api-group='authorization.k8s.io' --output='wide'
-NAME                        SHORTNAMES   APIVERSION                NAMESPACED   KIND                       PREFERRED   VERBS    CATEGORIES
-localsubjectaccessreviews                authorization.k8s.io/v1   true         LocalSubjectAccessReview   true        create
-selfsubjectaccessreviews                 authorization.k8s.io/v1   false        SelfSubjectAccessReview    true        create
-selfsubjectrulesreviews                  authorization.k8s.io/v1   false        SelfSubjectRulesReview     true        create
-subjectaccessreviews                     authorization.k8s.io/v1   false        SubjectAccessReview        true        create
+NAME                        SHORTNAMES   APIVERSION                NAMESPACED   KIND                       PREFERRED   GROUPPREFERRED   VERBS    CATEGORIES
+localsubjectaccessreviews                authorization.k8s.io/v1   true         LocalSubjectAccessReview   true        true             create
+selfsubjectaccessreviews                 authorization.k8s.io/v1   false        SelfSubjectAccessReview    true        true             create
+selfsubjectrulesreviews                  authorization.k8s.io/v1   false        SelfSubjectRulesReview     true        true             create
+subjectaccessreviews                     authorization.k8s.io/v1   false        SubjectAccessReview        true        true             create
 $ kubectl api-resource-versions --api-group='autoscaling' --output='wide'
-NAME                       SHORTNAMES   APIVERSION       NAMESPACED   KIND                      PREFERRED   VERBS                                                        CATEGORIES
-horizontalpodautoscalers   hpa          autoscaling/v2   true         HorizontalPodAutoscaler   true        create,delete,deletecollection,get,list,patch,update,watch   all
-horizontalpodautoscalers   hpa          autoscaling/v1   true         HorizontalPodAutoscaler   false       create,delete,deletecollection,get,list,patch,update,watch   all
-$ kubectl api-resource-versions --api-group='autoscaling.x-k8s.io' --output='wide'
-NAME                   SHORTNAMES         APIVERSION                     NAMESPACED   KIND                  PREFERRED   VERBS                                                        CATEGORIES
-provisioningrequests   provreq,provreqs   autoscaling.x-k8s.io/v1        true         ProvisioningRequest   true        delete,deletecollection,get,list,patch,create,update,watch
-provisioningrequests   provreq,provreqs   autoscaling.x-k8s.io/v1beta1   true         ProvisioningRequest   false       delete,deletecollection,get,list,patch,create,update,watch
+NAME                       SHORTNAMES   APIVERSION            NAMESPACED   KIND                      PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+horizontalpodautoscalers   hpa          autoscaling/v2        true         HorizontalPodAutoscaler   true        true             create,delete,deletecollection,get,list,patch,update,watch   all
+horizontalpodautoscalers   hpa          autoscaling/v1        true         HorizontalPodAutoscaler   false       false            create,delete,deletecollection,get,list,patch,update,watch   all
+horizontalpodautoscalers   hpa          autoscaling/v2beta2   true         HorizontalPodAutoscaler   false       false            create,delete,deletecollection,get,list,patch,update,watch   all
 $ kubectl api-resource-versions --api-group='batch' --output='wide'
-NAME       SHORTNAMES   APIVERSION   NAMESPACED   KIND      PREFERRED   VERBS                                                        CATEGORIES
-cronjobs   cj           batch/v1     true         CronJob   true        create,delete,deletecollection,get,list,patch,update,watch   all
-jobs                    batch/v1     true         Job       true        create,delete,deletecollection,get,list,patch,update,watch   all
+NAME       SHORTNAMES   APIVERSION   NAMESPACED   KIND      PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+cronjobs   cj           batch/v1     true         CronJob   true        true             create,delete,deletecollection,get,list,patch,update,watch   all
+jobs                    batch/v1     true         Job       true        true             create,delete,deletecollection,get,list,patch,update,watch   all
 $ kubectl api-resource-versions --api-group='certificates.k8s.io' --output='wide'
-NAME                         SHORTNAMES   APIVERSION               NAMESPACED   KIND                        PREFERRED   VERBS                                                        CATEGORIES
-certificatesigningrequests   csr          certificates.k8s.io/v1   false        CertificateSigningRequest   true        create,delete,deletecollection,get,list,patch,update,watch
+NAME                         SHORTNAMES   APIVERSION               NAMESPACED   KIND                        PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+certificatesigningrequests   csr          certificates.k8s.io/v1   false        CertificateSigningRequest   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='coordination.k8s.io' --output='wide'
-NAME     SHORTNAMES   APIVERSION               NAMESPACED   KIND    PREFERRED   VERBS                                                        CATEGORIES
-leases                coordination.k8s.io/v1   true         Lease   true        create,delete,deletecollection,get,list,patch,update,watch
+NAME     SHORTNAMES   APIVERSION               NAMESPACED   KIND    PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+leases                coordination.k8s.io/v1   true         Lease   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='discovery.k8s.io' --output='wide'
-NAME             SHORTNAMES   APIVERSION            NAMESPACED   KIND            PREFERRED   VERBS                                                        CATEGORIES
-endpointslices                discovery.k8s.io/v1   true         EndpointSlice   true        create,delete,deletecollection,get,list,patch,update,watch
+NAME             SHORTNAMES   APIVERSION            NAMESPACED   KIND            PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+endpointslices                discovery.k8s.io/v1   true         EndpointSlice   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='events.k8s.io' --output='wide'
-NAME     SHORTNAMES   APIVERSION         NAMESPACED   KIND    PREFERRED   VERBS                                                        CATEGORIES
-events   ev           events.k8s.io/v1   true         Event   true        create,delete,deletecollection,get,list,patch,update,watch
+NAME     SHORTNAMES   APIVERSION         NAMESPACED   KIND    PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+events   ev           events.k8s.io/v1   true         Event   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='flowcontrol.apiserver.k8s.io' --output='wide'
-NAME                          SHORTNAMES   APIVERSION                        NAMESPACED   KIND                         PREFERRED   VERBS                                                        CATEGORIES
-flowschemas                                flowcontrol.apiserver.k8s.io/v1   false        FlowSchema                   true        create,delete,deletecollection,get,list,patch,update,watch
-prioritylevelconfigurations                flowcontrol.apiserver.k8s.io/v1   false        PriorityLevelConfiguration   true        create,delete,deletecollection,get,list,patch,update,watch
-$ kubectl api-resource-versions --api-group='gateway.networking.k8s.io' --output='wide'
-NAME              SHORTNAMES   APIVERSION                          NAMESPACED   KIND             PREFERRED   VERBS                                                        CATEGORIES
-gatewayclasses    gc           gateway.networking.k8s.io/v1        false        GatewayClass     true        delete,deletecollection,get,list,patch,create,update,watch   gateway-api
-gatewayclasses    gc           gateway.networking.k8s.io/v1beta1   false        GatewayClass     false       delete,deletecollection,get,list,patch,create,update,watch   gateway-api
-gateways          gtw          gateway.networking.k8s.io/v1        true         Gateway          true        delete,deletecollection,get,list,patch,create,update,watch   gateway-api
-gateways          gtw          gateway.networking.k8s.io/v1beta1   true         Gateway          false       delete,deletecollection,get,list,patch,create,update,watch   gateway-api
-httproutes                     gateway.networking.k8s.io/v1        true         HTTPRoute        true        delete,deletecollection,get,list,patch,create,update,watch   gateway-api
-httproutes                     gateway.networking.k8s.io/v1beta1   true         HTTPRoute        false       delete,deletecollection,get,list,patch,create,update,watch   gateway-api
-referencegrants   refgrant     gateway.networking.k8s.io/v1beta1   true         ReferenceGrant   false       delete,deletecollection,get,list,patch,create,update,watch   gateway-api
-$ kubectl api-resource-versions --api-group='metrics.k8s.io' --output='wide'
-NAME    SHORTNAMES   APIVERSION               NAMESPACED   KIND          PREFERRED   VERBS      CATEGORIES
-nodes                metrics.k8s.io/v1beta1   false        NodeMetrics   true        get,list
-pods                 metrics.k8s.io/v1beta1   true         PodMetrics    true        get,list
+NAME                          SHORTNAMES   APIVERSION                             NAMESPACED   KIND                         PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+flowschemas                                flowcontrol.apiserver.k8s.io/v1beta2   false        FlowSchema                   true        true             create,delete,deletecollection,get,list,patch,update,watch
+flowschemas                                flowcontrol.apiserver.k8s.io/v1beta1   false        FlowSchema                   false       false            create,delete,deletecollection,get,list,patch,update,watch
+prioritylevelconfigurations                flowcontrol.apiserver.k8s.io/v1beta2   false        PriorityLevelConfiguration   true        true             create,delete,deletecollection,get,list,patch,update,watch
+prioritylevelconfigurations                flowcontrol.apiserver.k8s.io/v1beta1   false        PriorityLevelConfiguration   false       false            create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='networking.k8s.io' --output='wide'
-NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND            PREFERRED   VERBS                                                        CATEGORIES
-ingressclasses                 networking.k8s.io/v1   false        IngressClass    true        create,delete,deletecollection,get,list,patch,update,watch
-ingresses         ing          networking.k8s.io/v1   true         Ingress         true        create,delete,deletecollection,get,list,patch,update,watch
-networkpolicies   netpol       networking.k8s.io/v1   true         NetworkPolicy   true        create,delete,deletecollection,get,list,patch,update,watch
+NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND            PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+ingressclasses                 networking.k8s.io/v1   false        IngressClass    true        true             create,delete,deletecollection,get,list,patch,update,watch
+ingresses         ing          networking.k8s.io/v1   true         Ingress         true        true             create,delete,deletecollection,get,list,patch,update,watch
+networkpolicies   netpol       networking.k8s.io/v1   true         NetworkPolicy   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='node.k8s.io' --output='wide'
-NAME             SHORTNAMES   APIVERSION       NAMESPACED   KIND           PREFERRED   VERBS                                                        CATEGORIES
-runtimeclasses                node.k8s.io/v1   false        RuntimeClass   true        create,delete,deletecollection,get,list,patch,update,watch
+NAME             SHORTNAMES   APIVERSION       NAMESPACED   KIND           PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+runtimeclasses                node.k8s.io/v1   false        RuntimeClass   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='policy' --output='wide'
-NAME                   SHORTNAMES   APIVERSION   NAMESPACED   KIND                  PREFERRED   VERBS                                                        CATEGORIES
-poddisruptionbudgets   pdb          policy/v1    true         PodDisruptionBudget   true        create,delete,deletecollection,get,list,patch,update,watch
+NAME                   SHORTNAMES   APIVERSION   NAMESPACED   KIND                  PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+poddisruptionbudgets   pdb          policy/v1    true         PodDisruptionBudget   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='rbac.authorization.k8s.io' --output='wide'
-NAME                  SHORTNAMES   APIVERSION                     NAMESPACED   KIND                 PREFERRED   VERBS                                                        CATEGORIES
-clusterrolebindings                rbac.authorization.k8s.io/v1   false        ClusterRoleBinding   true        create,delete,deletecollection,get,list,patch,update,watch
-clusterroles                       rbac.authorization.k8s.io/v1   false        ClusterRole          true        create,delete,deletecollection,get,list,patch,update,watch
-rolebindings                       rbac.authorization.k8s.io/v1   true         RoleBinding          true        create,delete,deletecollection,get,list,patch,update,watch
-roles                              rbac.authorization.k8s.io/v1   true         Role                 true        create,delete,deletecollection,get,list,patch,update,watch
+NAME                  SHORTNAMES   APIVERSION                     NAMESPACED   KIND                 PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+clusterrolebindings                rbac.authorization.k8s.io/v1   false        ClusterRoleBinding   true        true             create,delete,deletecollection,get,list,patch,update,watch
+clusterroles                       rbac.authorization.k8s.io/v1   false        ClusterRole          true        true             create,delete,deletecollection,get,list,patch,update,watch
+rolebindings                       rbac.authorization.k8s.io/v1   true         RoleBinding          true        true             create,delete,deletecollection,get,list,patch,update,watch
+roles                              rbac.authorization.k8s.io/v1   true         Role                 true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='scheduling.k8s.io' --output='wide'
-NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND            PREFERRED   VERBS                                                        CATEGORIES
-priorityclasses   pc           scheduling.k8s.io/v1   false        PriorityClass   true        create,delete,deletecollection,get,list,patch,update,watch
-$ kubectl api-resource-versions --api-group='snapshot.storage.k8s.io' --output='wide'
-NAME                     SHORTNAMES          APIVERSION                        NAMESPACED   KIND                    PREFERRED   VERBS                                                        CATEGORIES
-volumesnapshotclasses    vsclass,vsclasses   snapshot.storage.k8s.io/v1        false        VolumeSnapshotClass     true        delete,deletecollection,get,list,patch,create,update,watch
-volumesnapshotclasses    vsclass,vsclasses   snapshot.storage.k8s.io/v1beta1   false        VolumeSnapshotClass     false       delete,deletecollection,get,list,patch,create,update,watch
-volumesnapshotcontents   vsc,vscs            snapshot.storage.k8s.io/v1        false        VolumeSnapshotContent   true        delete,deletecollection,get,list,patch,create,update,watch
-volumesnapshotcontents   vsc,vscs            snapshot.storage.k8s.io/v1beta1   false        VolumeSnapshotContent   false       delete,deletecollection,get,list,patch,create,update,watch
-volumesnapshots          vs                  snapshot.storage.k8s.io/v1        true         VolumeSnapshot          true        delete,deletecollection,get,list,patch,create,update,watch
-volumesnapshots          vs                  snapshot.storage.k8s.io/v1beta1   true         VolumeSnapshot          false       delete,deletecollection,get,list,patch,create,update,watch
+NAME              SHORTNAMES   APIVERSION             NAMESPACED   KIND            PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+priorityclasses   pc           scheduling.k8s.io/v1   false        PriorityClass   true        true             create,delete,deletecollection,get,list,patch,update,watch
 $ kubectl api-resource-versions --api-group='storage.k8s.io' --output='wide'
-NAME                   SHORTNAMES   APIVERSION          NAMESPACED   KIND                 PREFERRED   VERBS                                                        CATEGORIES
-csidrivers                          storage.k8s.io/v1   false        CSIDriver            true        create,delete,deletecollection,get,list,patch,update,watch
-csinodes                            storage.k8s.io/v1   false        CSINode              true        create,delete,deletecollection,get,list,patch,update,watch
-csistoragecapacities                storage.k8s.io/v1   true         CSIStorageCapacity   true        create,delete,deletecollection,get,list,patch,update,watch
-storageclasses         sc           storage.k8s.io/v1   false        StorageClass         true        create,delete,deletecollection,get,list,patch,update,watch
-volumeattachments                   storage.k8s.io/v1   false        VolumeAttachment     true        create,delete,deletecollection,get,list,patch,update,watch
+NAME                   SHORTNAMES   APIVERSION               NAMESPACED   KIND                 PREFERRED   GROUPPREFERRED   VERBS                                                        CATEGORIES
+csidrivers                          storage.k8s.io/v1        false        CSIDriver            true        true             create,delete,deletecollection,get,list,patch,update,watch
+csinodes                            storage.k8s.io/v1        false        CSINode              true        true             create,delete,deletecollection,get,list,patch,update,watch
+csistoragecapacities                storage.k8s.io/v1        true         CSIStorageCapacity   true        true             create,delete,deletecollection,get,list,patch,update,watch
+csistoragecapacities                storage.k8s.io/v1beta1   true         CSIStorageCapacity   false       false            create,delete,deletecollection,get,list,patch,update,watch
+storageclasses         sc           storage.k8s.io/v1        false        StorageClass         true        true             create,delete,deletecollection,get,list,patch,update,watch
+volumeattachments                   storage.k8s.io/v1        false        VolumeAttachment     true        true             create,delete,deletecollection,get,list,patch,update,watch
 ```
 </details>
 
@@ -452,8 +404,6 @@ serviceaccounts.v1.
 services.v1.
 $ kubectl api-resource-versions --api-group='admissionregistration.k8s.io' --output='name'
 mutatingwebhookconfigurations.v1.admissionregistration.k8s.io
-validatingadmissionpolicies.v1.admissionregistration.k8s.io
-validatingadmissionpolicybindings.v1.admissionregistration.k8s.io
 validatingwebhookconfigurations.v1.admissionregistration.k8s.io
 $ kubectl api-resource-versions --api-group='apiextensions.k8s.io' --output='name'
 customresourcedefinitions.v1.apiextensions.k8s.io
@@ -466,7 +416,6 @@ deployments.v1.apps
 replicasets.v1.apps
 statefulsets.v1.apps
 $ kubectl api-resource-versions --api-group='authentication.k8s.io' --output='name'
-selfsubjectreviews.v1.authentication.k8s.io
 tokenreviews.v1.authentication.k8s.io
 $ kubectl api-resource-versions --api-group='authorization.k8s.io' --output='name'
 localsubjectaccessreviews.v1.authorization.k8s.io
@@ -476,9 +425,7 @@ subjectaccessreviews.v1.authorization.k8s.io
 $ kubectl api-resource-versions --api-group='autoscaling' --output='name'
 horizontalpodautoscalers.v2.autoscaling
 horizontalpodautoscalers.v1.autoscaling
-$ kubectl api-resource-versions --api-group='autoscaling.x-k8s.io' --output='name'
-provisioningrequests.v1.autoscaling.x-k8s.io
-provisioningrequests.v1beta1.autoscaling.x-k8s.io
+horizontalpodautoscalers.v2beta2.autoscaling
 $ kubectl api-resource-versions --api-group='batch' --output='name'
 cronjobs.v1.batch
 jobs.v1.batch
@@ -491,19 +438,10 @@ endpointslices.v1.discovery.k8s.io
 $ kubectl api-resource-versions --api-group='events.k8s.io' --output='name'
 events.v1.events.k8s.io
 $ kubectl api-resource-versions --api-group='flowcontrol.apiserver.k8s.io' --output='name'
-flowschemas.v1.flowcontrol.apiserver.k8s.io
-prioritylevelconfigurations.v1.flowcontrol.apiserver.k8s.io
-$ kubectl api-resource-versions --api-group='gateway.networking.k8s.io' --output='name'
-gatewayclasses.v1.gateway.networking.k8s.io
-gatewayclasses.v1beta1.gateway.networking.k8s.io
-gateways.v1.gateway.networking.k8s.io
-gateways.v1beta1.gateway.networking.k8s.io
-httproutes.v1.gateway.networking.k8s.io
-httproutes.v1beta1.gateway.networking.k8s.io
-referencegrants.v1beta1.gateway.networking.k8s.io
-$ kubectl api-resource-versions --api-group='metrics.k8s.io' --output='name'
-nodes.v1beta1.metrics.k8s.io
-pods.v1beta1.metrics.k8s.io
+flowschemas.v1beta2.flowcontrol.apiserver.k8s.io
+flowschemas.v1beta1.flowcontrol.apiserver.k8s.io
+prioritylevelconfigurations.v1beta2.flowcontrol.apiserver.k8s.io
+prioritylevelconfigurations.v1beta1.flowcontrol.apiserver.k8s.io
 $ kubectl api-resource-versions --api-group='networking.k8s.io' --output='name'
 ingressclasses.v1.networking.k8s.io
 ingresses.v1.networking.k8s.io
@@ -519,17 +457,11 @@ rolebindings.v1.rbac.authorization.k8s.io
 roles.v1.rbac.authorization.k8s.io
 $ kubectl api-resource-versions --api-group='scheduling.k8s.io' --output='name'
 priorityclasses.v1.scheduling.k8s.io
-$ kubectl api-resource-versions --api-group='snapshot.storage.k8s.io' --output='name'
-volumesnapshotclasses.v1.snapshot.storage.k8s.io
-volumesnapshotclasses.v1beta1.snapshot.storage.k8s.io
-volumesnapshotcontents.v1.snapshot.storage.k8s.io
-volumesnapshotcontents.v1beta1.snapshot.storage.k8s.io
-volumesnapshots.v1.snapshot.storage.k8s.io
-volumesnapshots.v1beta1.snapshot.storage.k8s.io
 $ kubectl api-resource-versions --api-group='storage.k8s.io' --output='name'
 csidrivers.v1.storage.k8s.io
 csinodes.v1.storage.k8s.io
 csistoragecapacities.v1.storage.k8s.io
+csistoragecapacities.v1beta1.storage.k8s.io
 storageclasses.v1.storage.k8s.io
 volumeattachments.v1.storage.k8s.io
 ```
@@ -548,7 +480,7 @@ Flags:
       --namespaced                     If false, non-namespaced resources will be returned, otherwise returning namespaced resources by default. (default true)
       --no-headers                     When using the default or custom-column output format, don't print headers (default print headers).
   -o, --output string                  Output format. One of: (wide, name).
-      --preferred                      Filter resources by whether their group version is the preferred one.
+      --preferred                      Filter resources by whether their version is in the server preferred resources.
       --sort-by string                 If non-empty, sort list of resources using specified field. One of (name, kind).
       --verbs strings                  Limit to resources that support the specified verbs.
 ```
