@@ -9,6 +9,7 @@ all: test lint build ## Run all the tests, linters and build the project
 clean: ## Clean the working directory from binaries, coverage
 	rm -f kubectl-api_resource_versions tmp/coverage/*
 	rm -rf dist
+	find . -type f -executable -name '*.test' -delete
 
 .PHONY: build
 build: ## Build the project (resulting binary is written to kubectl-api_resource_versions)

@@ -95,147 +95,157 @@ func (tt excludeGroupTest) Test(t *testing.T) {
 	}
 }
 
-func TestExcludeGroupVersion(t *testing.T) {
+func TestSplitResourceName(t *testing.T) {
 	t.Parallel()
 
-	apiGroup := &metav1.APIGroup{
-		Name: "apps",
-		Versions: []metav1.GroupVersionForDiscovery{
-			{GroupVersion: "apps/v1", Version: "v1"},
-			{GroupVersion: "apps/v1beta1", Version: "v1beta1"},
-		},
-		PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "apps/v1", Version: "v1"},
+	nu := func(s string) *string { return &s }
+	t.Run("ValidResourceNameWithGroupAndVersion", splitResourceNameTest{
+		resourceName:     "deployments",
+		baseResourceName: "deployments",
+		subresourceName:  nil,
+	}.Test)
+	t.Run("ValidResourceNameWithSubresource", splitResourceNameTest{
+		resourceName:     "deployments/status",
+		baseResourceName: "deployments",
+		subresourceName:  nu("status"),
+	}.Test)
+}
+
+type splitResourceNameTest struct {
+	resourceName     string
+	baseResourceName string
+	subresourceName  *string
+}
+
+func (tt splitResourceNameTest) Test(t *testing.T) {
+	t.Parallel()
+
+	gotBase, gotSub := splitResourceName(tt.resourceName)
+	if gotBase != tt.baseResourceName {
+		t.Errorf("splitResourceName() base = %v, want %v", gotBase, tt.baseResourceName)
 	}
-
-	t.Run("NoFilterMatch", excludeGroupVersionTest{
-		apiGroup:        apiGroup,
-		apiGroupVersion: "apps/v1",
-		options:         NewTestOptionsBuilder().APIResourceVersionsOptions(),
-		want:            false, // Should not be excluded because no filters are applied.
-	}.Test)
-	t.Run("PreferredFilterMatch", excludeGroupVersionTest{
-		apiGroup:        apiGroup,
-		apiGroupVersion: "apps/v1",
-		options:         NewTestOptionsBuilder().SetPreferred(true).APIResourceVersionsOptions(),
-		want:            false, // Should not be excluded because the group matches.
-	}.Test)
-	t.Run("NonPreferredFilterMatch", excludeGroupVersionTest{
-		apiGroup:        apiGroup,
-		apiGroupVersion: "apps/v1beta1",
-		options:         NewTestOptionsBuilder().SetPreferred(false).APIResourceVersionsOptions(),
-		want:            false, // Should be not be excluded because the group is not preferred.
-	}.Test)
-	t.Run("PreferredFilterNoMatch", excludeGroupVersionTest{
-		apiGroup:        apiGroup,
-		apiGroupVersion: "apps/v1beta1",
-		options:         NewTestOptionsBuilder().SetPreferred(true).APIResourceVersionsOptions(),
-		want:            true, // Should be excluded because the group is preferred but the version is not.
-	}.Test)
-	t.Run("NonPreferredFilterNoMatch", excludeGroupVersionTest{
-		apiGroup:        apiGroup,
-		apiGroupVersion: "apps/v1",
-		options:         NewTestOptionsBuilder().SetPreferred(false).APIResourceVersionsOptions(),
-		want:            true, // Should be excluded because the group is not preferred.
-	}.Test)
-}
-
-type excludeGroupVersionTest struct {
-	apiGroup        *metav1.APIGroup
-	apiGroupVersion string
-	options         *apiResourceVersionsOptions
-	want            bool
-}
-
-func (tt excludeGroupVersionTest) Test(t *testing.T) {
-	t.Parallel()
-
-	got := excludeGroupVersion(tt.apiGroup, tt.apiGroupVersion, tt.options)
-	if got != tt.want {
-		t.Errorf("excludeGroupVersion() = %v, want %v", got, tt.want)
+	switch {
+	case tt.subresourceName == nil && gotSub != nil:
+		t.Errorf("splitResourceName() expected nil subresource, got %v", *gotSub)
+	case tt.subresourceName != nil && gotSub == nil:
+		t.Errorf("splitResourceName() expected subresource %v, got nil", *tt.subresourceName)
+	case tt.subresourceName != nil && gotSub != nil:
+		if *gotSub != *tt.subresourceName {
+			t.Errorf("splitResourceName() subresource = %v, want %v", *gotSub, *tt.subresourceName)
+		}
 	}
 }
 
-// TestExcludeGroupResource tests resource filtering logic.
-func TestExcludeGroupResource(t *testing.T) {
+func TestUnversionedResourceName(t *testing.T) {
 	t.Parallel()
 
-	baseResource := groupResource{
-		APIGroup: &metav1.APIGroup{
-			Name: "apps",
-			Versions: []metav1.GroupVersionForDiscovery{
-				{GroupVersion: "apps/v1", Version: "v1"},
-				{GroupVersion: "apps/v1beta1", Version: "v1beta1"},
-			},
-			PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "apps/v1", Version: "v1"},
+	nu := func(s string) *string { return &s }
+	t.Run("CoreResource", unversionedResourceNameTest{
+		resource: metav1.APIResource{
+			Name:       "pods",
+			Namespaced: true,
+			Version:    "v1",
+			Kind:       "Pod",
 		},
-		APIGroupVersion: "apps/v1",
-		APIResource: &metav1.APIResource{
+		baseResourceNameWithGroup: "pods.",
+		subresourceName:           nil,
+	}.Test)
+	t.Run("NamedGroupResource", unversionedResourceNameTest{
+		resource: metav1.APIResource{
 			Name:       "deployments",
 			Namespaced: true,
-			Verbs:      []string{"get", "list", "watch"},
-			Categories: []string{"all"},
+			Group:      "apps",
+			Version:    "v1",
+			Kind:       "Deployment",
 		},
-	}
-
-	t.Run("NoFilterMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().APIResourceVersionsOptions(),
-		want:     false, // Should not be excluded because no filters are applied.
+		baseResourceNameWithGroup: "deployments.apps",
+		subresourceName:           nil,
 	}.Test)
-	t.Run("VerbFilterMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetVerbs([]string{"get"}).APIResourceVersionsOptions(),
-		want:     false, // Should not be excluded because "get" is a valid verb.
-	}.Test)
-	t.Run("VerbFilterNoMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetVerbs([]string{"create"}).APIResourceVersionsOptions(),
-		want:     true, // Should be excluded because "create" is not a valid verb.
-	}.Test)
-	t.Run("CategoryFilterMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetCategories([]string{"all"}).APIResourceVersionsOptions(),
-		want:     false, // Should not be excluded because "all" is a valid category.
-	}.Test)
-	t.Run("CategoryFilterNoMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetCategories([]string{"custom"}).APIResourceVersionsOptions(),
-		want:     true, // Should be excluded because "custom" is not a valid category.
-	}.Test)
-	t.Run("NamespacedFilterMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetNamespaced(true).APIResourceVersionsOptions(),
-		want:     false, // Should not be excluded because the resource is namespaced.
-	}.Test)
-	t.Run("NamespacedFilterNoMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetNamespaced(false).APIResourceVersionsOptions(),
-		want:     true, // Should be excluded because the resource is namespaced but filter is for non-namespaced.
-	}.Test)
-	t.Run("PreferredFilterMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetPreferred(true).APIResourceVersionsOptions(),
-		want:     false, // Should not be excluded because the resource is preferred.
-	}.Test)
-	t.Run("PreferredFilterNoMatch", excludeGroupResourceTest{
-		resource: baseResource,
-		options:  NewTestOptionsBuilder().SetPreferred(false).APIResourceVersionsOptions(),
-		want:     true, // Should be excluded because the resource is preferred but filter is for non-preferred.
+	t.Run("Subresource", unversionedResourceNameTest{
+		resource: metav1.APIResource{
+			Name:       "deployments/status",
+			Namespaced: true,
+			Group:      "apps",
+			Version:    "v1",
+		},
+		baseResourceNameWithGroup: "deployments.apps",
+		subresourceName:           nu("status"),
 	}.Test)
 }
 
-type excludeGroupResourceTest struct {
-	resource groupResource
-	options  *apiResourceVersionsOptions
-	want     bool
+type unversionedResourceNameTest struct {
+	resource                  metav1.APIResource
+	baseResourceNameWithGroup string
+	subresourceName           *string
 }
 
-func (tt excludeGroupResourceTest) Test(t *testing.T) {
+func (tt unversionedResourceNameTest) Test(t *testing.T) {
 	t.Parallel()
 
-	got := excludeGroupResource(tt.resource, tt.options)
-	if got != tt.want {
-		t.Errorf("excludeGroupResource() = %v, want %v", got, tt.want)
+	gotBase, gotSub := unversionedResourceName(tt.resource)
+	if gotBase != tt.baseResourceNameWithGroup {
+		t.Errorf("unversionedResourceName() base = %v, want %v", gotBase, tt.baseResourceNameWithGroup)
+	}
+	switch {
+	case tt.subresourceName == nil && gotSub != nil:
+		t.Errorf("unversionedResourceName() expected nil subresource, got %v", *gotSub)
+	case tt.subresourceName != nil && gotSub == nil:
+		t.Errorf("unversionedResourceName() expected subresource %v, got nil", *tt.subresourceName)
+	case tt.subresourceName != nil && gotSub != nil:
+		if *gotSub != *tt.subresourceName {
+			t.Errorf("unversionedResourceName() subresource = %v, want %v", *gotSub, *tt.subresourceName)
+		}
+	}
+}
+
+func TestGetPrefererredResourceVersions(t *testing.T) {
+	t.Parallel()
+
+	t.Run("GetPreferredVersions", getPreferredResourceVersionsTest{
+		preferredVersions: []*metav1.APIResourceList{
+			{
+				GroupVersion: "apps/v1",
+				APIResources: []metav1.APIResource{
+					{Name: "deployments", Namespaced: true, Kind: "Deployment"},
+					{Name: "deployments/status", Namespaced: true},
+				},
+			},
+			{
+				GroupVersion: "autoscaling/v2",
+				APIResources: []metav1.APIResource{
+					{Name: "horizontalpodautoscalers", Namespaced: true, Kind: "HorizontalPodAutoscaler"},
+				},
+			},
+		},
+		want: map[string]string{
+			"deployments.apps":                     "v1",
+			"horizontalpodautoscalers.autoscaling": "v2",
+		},
+		err: nil,
+	}.Test)
+}
+
+type getPreferredResourceVersionsTest struct {
+	preferredVersions []*metav1.APIResourceList
+	want              map[string]string
+	err               error
+}
+
+func (tt getPreferredResourceVersionsTest) Test(t *testing.T) {
+	t.Parallel()
+
+	builder := discoverytesting.NewFakeCachedDiscoveryClientBuilder()
+	builder.PreferredResources = tt.preferredVersions
+	options := NewTestOptionsBuilder().
+		WithDiscoveryClient(builder.CachedDiscoveryInterface()).
+		APIResourceVersionsOptions()
+
+	got, err := getPreferredResourceVersions(options)
+	if !errors.Is(err, tt.err) {
+		t.Fatalf("getPreferredResourceVersions() error = %v, wantErr %v", err, tt.err)
+	}
+	if !reflect.DeepEqual(got, tt.want) {
+		t.Errorf("getPreferredResourceVersions() = %v, want %v", got, tt.want)
 	}
 }
 
@@ -377,6 +387,7 @@ func TestPrintFunctions(t *testing.T) {
 			Verbs:        []string{"get", "list", "watch"},
 			Categories:   []string{"all"},
 		},
+		Preferred: true,
 	}
 
 	tests := []testCase{
@@ -390,7 +401,8 @@ func TestPrintFunctions(t *testing.T) {
 			name:     "wide output",
 			output:   wideOutput,
 			resource: sampleResource,
-			want:     "deployments  deploy  apps/v1  true  Deployment  true  get,list,watch  all\n",
+			want: "deployments  deploy  apps/v1  true  Deployment  true  " +
+				"true  get,list,watch  all\n",
 		},
 		{
 			name:     "name output",

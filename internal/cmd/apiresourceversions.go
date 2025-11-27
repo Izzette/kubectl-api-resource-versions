@@ -108,7 +108,7 @@ func NewCmdAPIResourceVersions(
 	cmd.Flags().StringSliceVar(&options.Categories, "categories", options.Categories,
 		"Limit to resources that belong to the specified categories.")
 	cmd.Flags().BoolVar(&options.Preferred, "preferred", options.Preferred,
-		"Filter resources by whether their group version is the preferred one.")
+		"Filter resources by whether their version is in the server preferred resources.")
 	configFlags.AddFlags(cmd.Flags())
 
 	return cmd
@@ -145,13 +145,19 @@ func newAPIResourceVersionsOptions(ioStreams genericiooptions.IOStreams) *apiRes
 
 // groupResource is represents a versioned API resource.
 type groupResource struct {
-	APIGroup        *metav1.APIGroup
+	// APIGroup is the API group of the resource.
+	APIGroup *metav1.APIGroup
+	// APIGroupVersion is the group version of the resource, e.g. "apps/v1".
 	APIGroupVersion string
-	APIResource     *metav1.APIResource
+	// APIResource is the API resource for this version.
+	APIResource *metav1.APIResource
+	// Preferred if this is the preferred version for the resource.
+	Preferred bool
 }
 
-// Preferred returns true if the version is the preferred version for the API group.
-func (gr groupResource) Preferred() bool {
+// PreferredGroupVersion returns true if the version is the preferred version for the API group.
+// Note that this is not the same as a preferred version for the resource.
+func (gr groupResource) PreferredGroupVersion() bool {
 	return gr.APIGroup.PreferredVersion.GroupVersion == gr.APIGroupVersion
 }
 
@@ -231,6 +237,65 @@ func runAPIResourceVersions(options *apiResourceVersionsOptions) error {
 	return printGroupResources(resources, options)
 }
 
+// splitResourceName splits the resource name into its resource and subresource parts.
+// The first return value is the resource name, and the second return value is the subresource name if it exists.
+func splitResourceName(resourceName string) (string, *string) {
+	//nolint:mnd
+	parts := strings.SplitN(resourceName, "/", 2)
+	if len(parts) == 1 {
+		// If there is no subresource, we return the resource name and an empty string.
+		return parts[0], nil
+	}
+
+	subresourceName := parts[1]
+
+	return parts[0], &subresourceName
+}
+
+// unversionedResourceName returns the resource name in the format expected by kubectl, without the version.
+// The first return value is the resource name with its group in the format "<resource>.<group>".
+// The second return value is the subresource name if it exists.
+func unversionedResourceName(resource metav1.APIResource) (string, *string) {
+	// If the resource is a subresource, we skip it.
+	resourceName, subresourceName := splitResourceName(resource.Name)
+
+	// Otherwise, we return the resource name with its group.
+	return fmt.Sprintf("%s.%s", resourceName, resource.Group), subresourceName
+}
+
+// getPreferredResourceVersions retrieves the server preferred resource versions.
+// For the returned map:
+//
+//   - The key is in the format returned by [unversionedResourceName], which is "<resource>.<group>".
+//   - The value is the version for the group (e.g. "v1", "v1beta1", "v2").
+//
+// Subresources are not included in the map.
+func getPreferredResourceVersions(options *apiResourceVersionsOptions) (map[string]string, error) {
+	preferredResources, err := options.discoveryClient.ServerPreferredResources()
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get server preferred resources: %w", err)
+	}
+
+	preferredVersions := make(map[string]string, len(preferredResources))
+	for _, resourceList := range preferredResources {
+		groupVersion, err := schema.ParseGroupVersion(resourceList.GroupVersion)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't parse group version %s: %w", resourceList.GroupVersion, err)
+		}
+		for _, resource := range resourceList.APIResources {
+			resource.Group = groupVersion.Group // Why is this not set?
+			resourceKey, subresourceName := unversionedResourceName(resource)
+			if subresourceName != nil {
+				// If the resource is a subresource, we skip it.
+				continue
+			}
+			preferredVersions[resourceKey] = groupVersion.Version
+		}
+	}
+
+	return preferredVersions, nil
+}
+
 // getGroupResources retrieves the API resources and their group versions from the discovery client.
 func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, error) {
 	if !options.Cached {
@@ -240,6 +305,11 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 	groupList, err := options.discoveryClient.ServerGroups()
 	if err != nil {
 		return []groupResource{}, fmt.Errorf("couldn't get server groups: %w", err)
+	}
+
+	preferredResources, err := getPreferredResourceVersions(options)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get preferred resource versions: %w", err)
 	}
 
 	// We could quickly calculate the total number of resources in the server groups to avoid having to re-size the
@@ -255,27 +325,47 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 			continue
 		}
 
-		for _, version := range group.Versions {
-			if excludeGroupVersion(group, version.GroupVersion, options) {
-				// If the group version is excluded, we skip it.
+		groupResources, err := processGroupResources(options, group, preferredResources)
+		if err != nil {
+			return nil, err
+		}
+		resources = append(resources, groupResources...)
+	}
+
+	return resources, nil
+}
+
+func processGroupResources(
+	options *apiResourceVersionsOptions,
+	group *metav1.APIGroup,
+	preferredResources map[string]string,
+) ([]groupResource, error) {
+	resources := make([]groupResource, 0)
+	for _, version := range group.Versions {
+		resourceList, err := options.discoveryClient.ServerResourcesForGroupVersion(version.GroupVersion)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get server resources for group version %s: %w", version.GroupVersion, err)
+		}
+
+		for _, apiResource := range resourceList.APIResources {
+			apiResource.Group = group.Name // Why is this not set?
+			resourceName, subresourceName := unversionedResourceName(apiResource)
+			if subresourceName != nil {
+				// If the resource is a subresource, we skip it.
 				continue
 			}
+			preferredVersion, ok := preferredResources[resourceName]
+			preferred := ok && preferredVersion == version.Version
 
-			resourceList, err := options.discoveryClient.ServerResourcesForGroupVersion(version.GroupVersion)
-			if err != nil {
-				return nil, fmt.Errorf("couldn't get server resources for group version %s: %w", version.GroupVersion, err)
+			resource := groupResource{
+				APIGroup:        group,
+				APIGroupVersion: version.GroupVersion,
+				APIResource:     &apiResource,
+				Preferred:       preferred,
 			}
 
-			for _, apiResource := range resourceList.APIResources {
-				resource := groupResource{
-					APIGroup:        group,
-					APIGroupVersion: version.GroupVersion,
-					APIResource:     &apiResource,
-				}
-
-				if !excludeGroupResource(resource, options) {
-					resources = append(resources, resource)
-				}
+			if !excludeGroupResource(resource, options) {
+				resources = append(resources, resource)
 			}
 		}
 	}
@@ -286,16 +376,6 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 // excludeGroup checks if the group should be excluded based on the options.
 func excludeGroup(group *metav1.APIGroup, options *apiResourceVersionsOptions) bool {
 	if options.groupChanged && options.APIGroup != group.Name {
-		return true
-	}
-
-	return false
-}
-
-// excludeGroupVersion checks if the group version should be excluded based on the options.
-func excludeGroupVersion(group *metav1.APIGroup, groupVersion string, options *apiResourceVersionsOptions) bool {
-	isPreferred := group.PreferredVersion.GroupVersion == groupVersion
-	if options.preferredChanged && options.Preferred != isPreferred {
 		return true
 	}
 
@@ -320,7 +400,7 @@ func excludeGroupResource(resource groupResource, options *apiResourceVersionsOp
 	if len(options.Categories) > 0 && !sets.New(resource.APIResource.Categories...).HasAll(options.Categories...) {
 		return true
 	}
-	if options.preferredChanged && options.Preferred != resource.Preferred() {
+	if options.preferredChanged && options.Preferred != resource.Preferred {
 		return true
 	}
 
@@ -368,7 +448,7 @@ func printGroupResources(resources []groupResource, options *apiResourceVersions
 func printHeaders(out io.Writer, output string) error {
 	headers := []string{"NAME", "SHORTNAMES", "APIVERSION", "NAMESPACED", "KIND", "PREFERRED"}
 	if output == "wide" {
-		headers = append(headers, "VERBS", "CATEGORIES")
+		headers = append(headers, "GROUPPREFERRED", "VERBS", "CATEGORIES")
 	}
 	if _, err := fmt.Fprintf(out, "%s\n", strings.Join(headers, "\t")); err != nil {
 		return fmt.Errorf("error printing headers: %w", err)
@@ -388,13 +468,14 @@ func printGroupResourcesByName(writer io.Writer, resource groupResource) error {
 
 // printGroupResourcesWide prints the API resources in wide format.
 func printGroupResourcesWide(writer io.Writer, resource groupResource) error {
-	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%v\t%s\t%v\n",
+	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%t\t%t\t%s\t%s\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
 		resource.APIGroupVersion,
 		resource.APIResource.Namespaced,
 		resource.APIResource.Kind,
-		resource.Preferred(),
+		resource.Preferred,
+		resource.PreferredGroupVersion(),
 		strings.Join(resource.APIResource.Verbs, ","),
 		strings.Join(resource.APIResource.Categories, ","),
 	); err != nil {
@@ -406,13 +487,13 @@ func printGroupResourcesWide(writer io.Writer, resource groupResource) error {
 
 // printGroupResourcesDefault prints the API resources in the default format.
 func printGroupResourcesDefault(writer io.Writer, resource groupResource) error {
-	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%v\n",
+	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%t\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
 		resource.APIGroupVersion,
 		resource.APIResource.Namespaced,
 		resource.APIResource.Kind,
-		resource.Preferred(),
+		resource.Preferred,
 	); err != nil {
 		return fmt.Errorf("error printing resource in default format: %w", err)
 	}
