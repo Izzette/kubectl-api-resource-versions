@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/Izzette/kubectl-api-resource-versions/compare/v0.1.1...v0.1.2) (2025-12-09)
+
+
+### Bug Fixes
+
+* improve preferred resource handling ([#35](https://github.com/Izzette/kubectl-api-resource-versions/issues/35)) ([27ab28e](https://github.com/Izzette/kubectl-api-resource-versions/commit/27ab28ed699fcfded016401a061c082a92760965))
+
 ## [0.1.1](https://github.com/Izzette/kubectl-api-resource-versions/compare/v0.1.0...v0.1.1) (2025-05-25)
 
 
