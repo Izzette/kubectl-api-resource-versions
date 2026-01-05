@@ -99,6 +99,7 @@ func TestSplitResourceName(t *testing.T) {
 	t.Parallel()
 
 	nu := func(s string) *string { return &s }
+
 	t.Run("ValidResourceNameWithGroupAndVersion", splitResourceNameTest{
 		resourceName:     "deployments",
 		baseResourceName: "deployments",
@@ -124,6 +125,7 @@ func (tt splitResourceNameTest) Test(t *testing.T) {
 	if gotBase != tt.baseResourceName {
 		t.Errorf("splitResourceName() base = %v, want %v", gotBase, tt.baseResourceName)
 	}
+
 	switch {
 	case tt.subresourceName == nil && gotSub != nil:
 		t.Errorf("splitResourceName() expected nil subresource, got %v", *gotSub)
@@ -140,6 +142,7 @@ func TestUnversionedResourceName(t *testing.T) {
 	t.Parallel()
 
 	nu := func(s string) *string { return &s }
+
 	t.Run("CoreResource", unversionedResourceNameTest{
 		resource: metav1.APIResource{
 			Name:       "pods",
@@ -186,6 +189,7 @@ func (tt unversionedResourceNameTest) Test(t *testing.T) {
 	if gotBase != tt.baseResourceNameWithGroup {
 		t.Errorf("unversionedResourceName() base = %v, want %v", gotBase, tt.baseResourceNameWithGroup)
 	}
+
 	switch {
 	case tt.subresourceName == nil && gotSub != nil:
 		t.Errorf("unversionedResourceName() expected nil subresource, got %v", *gotSub)
@@ -244,6 +248,7 @@ func (tt getPreferredResourceVersionsTest) Test(t *testing.T) {
 	if !errors.Is(err, tt.err) {
 		t.Fatalf("getPreferredResourceVersions() error = %v, wantErr %v", err, tt.err)
 	}
+
 	if !reflect.DeepEqual(got, tt.want) {
 		t.Errorf("getPreferredResourceVersions() = %v, want %v", got, tt.want)
 	}
@@ -328,6 +333,7 @@ func (tt getGroupResourcesCountTest) Test(t *testing.T) {
 	if !errors.Is(err, tt.wantErr) {
 		t.Fatalf("getGroupResources() error = %v, wantErr %v", err, tt.wantErr)
 	}
+
 	if len(got) != tt.wantResourcesCount {
 		t.Errorf("getGroupResources() count = %d, want %d", len(got), tt.wantResourcesCount)
 	}
@@ -346,13 +352,16 @@ func (tt getGroupResourcesNamesTest) Test(t *testing.T) {
 	if !errors.Is(err, tt.wantErr) {
 		t.Fatalf("getGroupResources() error = %v, wantErr %v", err, tt.wantErr)
 	}
+
 	if len(got) != len(tt.wantResourcesNames) {
 		t.Errorf("getGroupResources() count = %d, want %d", len(got), len(tt.wantResourcesNames))
 	}
+
 	gotNames := make([]string, len(got))
 	for i, resource := range got {
 		gotNames[i] = resource.fullname()
 	}
+
 	if !reflect.DeepEqual(gotNames, tt.wantResourcesNames) {
 		t.Errorf("getGroupResources() names = %v, want %v", gotNames, tt.wantResourcesNames)
 	}
@@ -420,6 +429,7 @@ func TestPrintFunctions(t *testing.T) {
 			writer := tabwriter.NewWriter(buf, 0, 0, 2, ' ', 0)
 
 			var printFunc func(io.Writer, groupResource) error
+
 			switch tt.output {
 			case wideOutput:
 				printFunc = printGroupResourcesWide
@@ -429,9 +439,11 @@ func TestPrintFunctions(t *testing.T) {
 				printFunc = printGroupResourcesDefault
 			}
 
-			if err := printFunc(writer, tt.resource); err != nil {
+			err := printFunc(writer, tt.resource)
+			if err != nil {
 				t.Fatalf("print function failed: %v", err)
 			}
+
 			mustFlushWriter(writer)
 
 			if buf.String() != tt.want {
@@ -458,6 +470,7 @@ func TestSorting(t *testing.T) {
 		copy(resourcesCopy, resources)
 		sorter := sortableResource{resources: resourcesCopy, sortBy: nameSortBy}
 		sort.Sort(sorter)
+
 		if sorter.resources[0].APIResource.Name != "b-kind" {
 			t.Error("resources not sorted by resource name")
 		}
@@ -470,6 +483,7 @@ func TestSorting(t *testing.T) {
 		copy(resourcesCopy, resources)
 		sorter := sortableResource{resources: resourcesCopy, sortBy: kindSortBy}
 		sort.Sort(sorter)
+
 		if sorter.resources[0].APIResource.Kind != "AKind" {
 			t.Error("resources not sorted by kind")
 		}
@@ -482,9 +496,11 @@ func TestSorting(t *testing.T) {
 		copy(resourcesCopy, resources)
 		sorter := sortableResource{resources: resourcesCopy}
 		sort.Sort(sorter)
+
 		if sorter.resources[0].APIGroup.Name != "bar" {
 			t.Error("resources not sorted by api group name")
 		}
+
 		if sorter.resources[1].APIResource.Name != "b-kind" {
 			t.Error("resources not sorted by resource name")
 		}
@@ -499,7 +515,8 @@ func BenchmarkGet3000GroupResources(b *testing.B) {
 	options := NewTestOptionsBuilder().WithDiscoveryClient(cached).APIResourceVersionsOptions()
 
 	for b.Loop() {
-		if _, err := getGroupResources(options); err != nil {
+		_, err := getGroupResources(options)
+		if err != nil {
 			b.Fatalf("getGroupResources failed: %v", err)
 		}
 	}
@@ -531,7 +548,8 @@ func BenchmarkPrintGroupResources(b *testing.B) {
 
 	for b.Loop() {
 		// Print the resources using the default print function
-		if err := printGroupResourcesDefault(io.Discard, groupResource); err != nil {
+		err := printGroupResourcesDefault(io.Discard, groupResource)
+		if err != nil {
 			b.Fatalf("printGroupResourcesDefault failed: %v", err)
 		}
 	}
@@ -554,6 +572,7 @@ func BenchmarkSortableResource(b *testing.B) {
 	})
 
 	b.ResetTimer()
+
 	for b.Loop() {
 		// Create a sortableResource instance with the shuffled resources
 		copyOfGroupResources := make([]groupResource, len(groupResources))
@@ -564,6 +583,7 @@ func BenchmarkSortableResource(b *testing.B) {
 		}
 
 		sort.Sort(sortable)
+
 		if len(sortable.resources) == 0 {
 			b.Fatal("no resources to sort")
 		}

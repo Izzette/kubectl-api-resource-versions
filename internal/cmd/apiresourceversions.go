@@ -116,6 +116,8 @@ func NewCmdAPIResourceVersions(
 
 // apiResourceVersionsOptions contains the options for the api-resource-versions command.
 type apiResourceVersionsOptions struct {
+	genericiooptions.IOStreams
+
 	Output     string
 	SortBy     string
 	APIGroup   string
@@ -131,8 +133,6 @@ type apiResourceVersionsOptions struct {
 	preferredChanged bool
 
 	discoveryClient discovery.CachedDiscoveryInterface
-
-	genericiooptions.IOStreams
 }
 
 // newAPIResourceVersionsOptions returns a new [apiResourceVersionsOptions] with default values.
@@ -185,6 +185,7 @@ func (o *apiResourceVersionsOptions) validate() error {
 	if !supportedOutputTypes.Has(o.Output) {
 		return fmt.Errorf("%w: %s is not available", errWrongOutput, o.Output)
 	}
+
 	supportedSortTypes := sets.New("", nameSortBy, kindSortBy)
 	if len(o.SortBy) > 0 {
 		if !supportedSortTypes.Has(o.SortBy) {
@@ -210,6 +211,7 @@ func (o *apiResourceVersionsOptions) complete(
 	if err != nil {
 		return fmt.Errorf("couldn't create discovery client: %w", err)
 	}
+
 	o.discoveryClient = discoveryClient
 
 	o.groupChanged = cmd.Flags().Changed("api-group")
@@ -282,13 +284,16 @@ func getPreferredResourceVersions(options *apiResourceVersionsOptions) (map[stri
 		if err != nil {
 			return nil, fmt.Errorf("couldn't parse group version %s: %w", resourceList.GroupVersion, err)
 		}
+
 		for _, resource := range resourceList.APIResources {
 			resource.Group = groupVersion.Group // Why is this not set?
+
 			resourceKey, subresourceName := unversionedResourceName(resource)
 			if subresourceName != nil {
 				// If the resource is a subresource, we skip it.
 				continue
 			}
+
 			preferredVersions[resourceKey] = groupVersion.Version
 		}
 	}
@@ -317,6 +322,7 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 	// However, when the number of resources is large, this could result in very high memory usage even when heavily
 	// filtering the group resources.
 	resources := make([]groupResource, 0)
+
 	for i := range groupList.Groups {
 		group := &groupList.Groups[i]
 
@@ -329,6 +335,7 @@ func getGroupResources(options *apiResourceVersionsOptions) ([]groupResource, er
 		if err != nil {
 			return nil, err
 		}
+
 		resources = append(resources, groupResources...)
 	}
 
@@ -341,6 +348,7 @@ func processGroupResources(
 	preferredResources map[string]string,
 ) ([]groupResource, error) {
 	resources := make([]groupResource, 0)
+
 	for _, version := range group.Versions {
 		resourceList, err := options.discoveryClient.ServerResourcesForGroupVersion(version.GroupVersion)
 		if err != nil {
@@ -349,11 +357,13 @@ func processGroupResources(
 
 		for _, apiResource := range resourceList.APIResources {
 			apiResource.Group = group.Name // Why is this not set?
+
 			resourceName, subresourceName := unversionedResourceName(apiResource)
 			if subresourceName != nil {
 				// If the resource is a subresource, we skip it.
 				continue
 			}
+
 			preferredVersion, ok := preferredResources[resourceName]
 			preferred := ok && preferredVersion == version.Version
 
@@ -394,12 +404,15 @@ func excludeGroupResource(resource groupResource, options *apiResourceVersionsOp
 	if options.nsChanged && options.Namespaced != resource.APIResource.Namespaced {
 		return true
 	}
+
 	if len(options.Verbs) > 0 && !sets.New(resource.APIResource.Verbs...).HasAll(options.Verbs...) {
 		return true
 	}
+
 	if len(options.Categories) > 0 && !sets.New(resource.APIResource.Categories...).HasAll(options.Categories...) {
 		return true
 	}
+
 	if options.preferredChanged && options.Preferred != resource.Preferred {
 		return true
 	}
@@ -414,7 +427,8 @@ func printGroupResources(resources []groupResource, options *apiResourceVersions
 	defer mustFlushWriter(writer)
 
 	if !options.NoHeaders && options.Output != nameOutput {
-		if err := printHeaders(writer, options.Output); err != nil {
+		err := printHeaders(writer, options.Output)
+		if err != nil {
 			return err
 		}
 	}
@@ -422,8 +436,10 @@ func printGroupResources(resources []groupResource, options *apiResourceVersions
 	sort.Stable(sortableResource{resources, options.SortBy})
 
 	var errs []error
+
 	for _, resource := range resources {
 		var err error
+
 		switch options.Output {
 		case nameOutput:
 			err = printGroupResourcesByName(writer, resource)
@@ -432,6 +448,7 @@ func printGroupResources(resources []groupResource, options *apiResourceVersions
 		default:
 			err = printGroupResourcesDefault(writer, resource)
 		}
+
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -450,7 +467,9 @@ func printHeaders(out io.Writer, output string) error {
 	if output == "wide" {
 		headers = append(headers, "GROUPPREFERRED", "VERBS", "CATEGORIES")
 	}
-	if _, err := fmt.Fprintf(out, "%s\n", strings.Join(headers, "\t")); err != nil {
+
+	_, err := fmt.Fprintf(out, "%s\n", strings.Join(headers, "\t"))
+	if err != nil {
 		return fmt.Errorf("error printing headers: %w", err)
 	}
 
@@ -459,7 +478,8 @@ func printHeaders(out io.Writer, output string) error {
 
 // printGroupResourcesByName prints the API resource name in the format expected by kubectl.
 func printGroupResourcesByName(writer io.Writer, resource groupResource) error {
-	if _, err := fmt.Fprintf(writer, "%s\n", resource.fullname()); err != nil {
+	_, err := fmt.Fprintf(writer, "%s\n", resource.fullname())
+	if err != nil {
 		return fmt.Errorf("error printing resource name: %w", err)
 	}
 
@@ -468,7 +488,7 @@ func printGroupResourcesByName(writer io.Writer, resource groupResource) error {
 
 // printGroupResourcesWide prints the API resources in wide format.
 func printGroupResourcesWide(writer io.Writer, resource groupResource) error {
-	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%t\t%t\t%s\t%s\n",
+	_, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%t\t%t\t%s\t%s\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
 		resource.APIGroupVersion,
@@ -478,7 +498,8 @@ func printGroupResourcesWide(writer io.Writer, resource groupResource) error {
 		resource.PreferredGroupVersion(),
 		strings.Join(resource.APIResource.Verbs, ","),
 		strings.Join(resource.APIResource.Categories, ","),
-	); err != nil {
+	)
+	if err != nil {
 		return fmt.Errorf("error printing resource in wide format: %w", err)
 	}
 
@@ -487,14 +508,15 @@ func printGroupResourcesWide(writer io.Writer, resource groupResource) error {
 
 // printGroupResourcesDefault prints the API resources in the default format.
 func printGroupResourcesDefault(writer io.Writer, resource groupResource) error {
-	if _, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%t\n",
+	_, err := fmt.Fprintf(writer, "%s\t%s\t%s\t%v\t%s\t%t\n",
 		resource.APIResource.Name,
 		strings.Join(resource.APIResource.ShortNames, ","),
 		resource.APIGroupVersion,
 		resource.APIResource.Namespaced,
 		resource.APIResource.Kind,
 		resource.Preferred,
-	); err != nil {
+	)
+	if err != nil {
 		return fmt.Errorf("error printing resource in default format: %w", err)
 	}
 
@@ -503,7 +525,8 @@ func printGroupResourcesDefault(writer io.Writer, resource groupResource) error 
 
 // mustFlushWriter flushes the writer to ensure all data is written.
 func mustFlushWriter(writer *tabwriter.Writer) {
-	if err := writer.Flush(); err != nil {
+	err := writer.Flush()
+	if err != nil {
 		panic(fmt.Errorf("error flushing writer: %w", err))
 	}
 }
