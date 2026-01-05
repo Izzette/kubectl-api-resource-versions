@@ -20,7 +20,9 @@ func ExampleYAMLDocumentsToJSON() {
 		}
 
 		var jsonDoc any
-		if err := decoder.Decode(&jsonDoc); err != nil {
+
+		err = decoder.Decode(&jsonDoc)
+		if err != nil {
 			panic(err)
 		}
 

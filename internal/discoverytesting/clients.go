@@ -42,6 +42,7 @@ func NewProcedural(groups, versionsPerGroup, resourcesPerVersion int) *cmdtestin
 			Name:     groupName,
 			Versions: []metav1.GroupVersionForDiscovery{},
 		}
+
 		for j := versionsPerGroup; j > 0; j-- {
 			versionName := fmt.Sprintf("v%d", j)
 			group.Versions = append(group.Versions, metav1.GroupVersionForDiscovery{
@@ -49,6 +50,7 @@ func NewProcedural(groups, versionsPerGroup, resourcesPerVersion int) *cmdtestin
 				Version:      versionName,
 			})
 		}
+
 		group.PreferredVersion = group.Versions[0] // Set the first version as preferred
 		builder.Groups = append(builder.Groups, group)
 	}

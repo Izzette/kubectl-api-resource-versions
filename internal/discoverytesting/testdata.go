@@ -4,6 +4,7 @@ import (
 	"bytes"
 	_ "embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 
@@ -55,7 +56,9 @@ func getGroup(groupYAML []byte) *metav1.APIGroup {
 	}
 
 	group := &metav1.APIGroup{}
-	if err := json.Unmarshal(groupJSON, &group); err != nil {
+
+	err = json.Unmarshal(groupJSON, &group)
+	if err != nil {
 		panic(fmt.Errorf("failed to unmarshal group: %w", err))
 	}
 
@@ -66,6 +69,7 @@ func getResources(resourcesYAML []byte) []*metav1.APIResourceList {
 	resourcesYAMLBuf := bytes.NewBuffer(resourcesYAML)
 
 	resources := make([]*metav1.APIResourceList, 0)
+
 	for result := range yamlutil.YAMLDocumentsToJSON(resourcesYAMLBuf) {
 		decoder, err := result.GetDecoder()
 		if err != nil {
@@ -73,8 +77,10 @@ func getResources(resourcesYAML []byte) []*metav1.APIResourceList {
 		}
 
 		resource := &metav1.APIResourceList{}
-		if err := decoder.Decode(&resource); err != nil {
-			if err == io.EOF {
+
+		err = decoder.Decode(&resource)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
 				break // End of resources
 			}
 

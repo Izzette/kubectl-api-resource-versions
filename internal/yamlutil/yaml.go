@@ -37,12 +37,16 @@ func (y *yamlToJSON) GetDecoder() (*json.Decoder, error) {
 func YAMLDocumentsToJSON(yamlStream io.Reader) iter.Seq[YAMLToJSON] {
 	return func(yield func(YAMLToJSON) bool) {
 		decoder := yaml.NewDecoder(yamlStream)
+
 		for {
 			var doc any
-			if err := decoder.Decode(&doc); err != nil {
+
+			err := decoder.Decode(&doc)
+			if err != nil {
 				if errors.Is(err, io.EOF) {
 					break // End of documents
 				}
+
 				err = fmt.Errorf("failed to decode YAML document: %w", err)
 				yield(&yamlToJSONErr{err: err})
 

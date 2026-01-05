@@ -20,8 +20,11 @@ func main() {
 	ioStreams := genericiooptions.IOStreams{In: os.Stdin, Out: os.Stdout, ErrOut: os.Stderr}
 
 	root := cmd.NewCmdAPIResourceVersions(restClientGetter, ioStreams)
-	if err := root.Execute(); err != nil {
-		if _, errWriteErr := fmt.Fprintln(ioStreams.ErrOut, err); errWriteErr != nil {
+
+	err := root.Execute()
+	if err != nil {
+		_, errWriteErr := fmt.Fprintln(ioStreams.ErrOut, err)
+		if errWriteErr != nil {
 			panic(fmt.Errorf("error encountered while writing %w to %v: %w", err, ioStreams.ErrOut, errWriteErr))
 		}
 	}
