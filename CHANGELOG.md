@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/Izzette/kubectl-api-resource-versions/compare/v0.1.2...v0.2.0) (2026-01-09)
+
+
+### Features
+
+* allow including subresources ([#46](https://github.com/Izzette/kubectl-api-resource-versions/issues/46)) ([f427071](https://github.com/Izzette/kubectl-api-resource-versions/commit/f427071142e7f14bdcc410f4cf6c6eedf1f3799f))
+
 ## [0.1.2](https://github.com/Izzette/kubectl-api-resource-versions/compare/v0.1.1...v0.1.2) (2025-12-09)
 
 
