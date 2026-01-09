@@ -11,6 +11,7 @@ A [`kubectl` plugin](https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plu
 ## Features
 
 - List API resources with their available group versions in a single view
+- Optionally include subresources (e.g., `pods/status`, `deployments/scale`)
 - Filter by API group, namespaced status, and preferred API group versions
 - Multiple output formats: `wide` (default), `name` (kubectl-compatible)
 - Sorting by resource name or kind
@@ -152,6 +153,11 @@ kubectl api-resource-versions --api-group='apps'
 List non-namespaced resources:
 ```shell
 kubectl api-resource-versions --namespaced='false'
+```
+
+Include subresources in the output:
+```shell
+kubectl api-resource-versions --include-subresources
 ```
 
 Show output in kubectl `name` format, and list those resources:
@@ -378,7 +384,67 @@ volumeattachments                   storage.k8s.io/v1        false        Volume
 ```
 </details>
 
-The `name` output format can be used directly with `kubectl` commands to interact with resources in a specific API version.
+### Using the `name` Output Format
+
+The `--output=name` (or `-o name`) format outputs resource names in a kubectl-compatible format that can be used directly with other `kubectl` commands.
+This is particularly useful for scripting and automation.
+
+#### Format
+
+The format of the resource names is designed to be directly usable with `kubectl get`, `kubectl describe`, and other commands.
+It includes the fully qualified resource name, which consists of the resource name, version, and API group.
+
+The name format follows this pattern:
+```
+<resource>.<version>.<group>
+```
+
+For core Kubernetes resources (where the API group is an empty string), the format is:
+```
+<resource>.<version>.
+```
+
+For example you can list all resources with the `list` verb and get their details across all namespaces:
+```shell
+kubectl api-resource-versions --verbs=list --output=name | while read resource; do
+  echo "$(tput bold)$resource$(tput sgr0):"
+  kubectl get "$resource" --all-namespaces 2>/dev/null
+done
+```
+
+When using `--include-subresources`, subresources are formatted with a space separator.
+```
+<resource>.<version>.<group> <subresource>
+```
+
+This enables direct use with `kubectl` commands for subresources.
+For example, we can get the status of all non-namespaced resources like so:
+```shell
+kubectl api-resource-versions --include-subresources --namespaced=false --output=name | while read resource subresource; do
+  if [ "$subresource" != status ]; then
+    continue
+  fi
+
+  echo "$(tput bold)$resource status$(tput sgr0):"
+  kubectl get "$resource" -o name | xargs kubectl get --subresource status
+done
+```
+
+Additionally it is possible scale to 0 all resources supporting the `scale` subresource, like so:
+```shell
+kubectl api-resource-versions --include-subresources --namespaced=true --output=name | while read resource subresource; do
+  if [ "$subresource" != scale ]; then
+    continue
+  fi
+
+  kubectl get "$resource" --all-namespaces -o json |
+    jq -r '.items[] | "\(.metadata.name) \(.metadata.namespace)"' |
+    while read name namespace; do
+      echo "$(tput bold)Scaling down $resource/$name in namespace $namespace$(tput sgr0)"
+      kubectl scale --namespace "$namespace" "$resource/$name" --replicas=0
+    done
+done
+```
 
 <details>
 <summary>Example name-only output format</summary>
@@ -477,6 +543,7 @@ Flags:
       --cached                         Use the cached list of resources if available.
       --categories strings             Limit to resources that belong to the specified categories.
   -h, --help                           help for api-resource-versions
+      --include-subresources           Include subresources in the output.
       --namespaced                     If false, non-namespaced resources will be returned, otherwise returning namespaced resources by default. (default true)
       --no-headers                     When using the default or custom-column output format, don't print headers (default print headers).
   -o, --output string                  Output format. One of: (wide, name).

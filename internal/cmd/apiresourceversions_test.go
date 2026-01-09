@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand/v2"
 	"reflect"
+	"slices"
 	"sort"
 	"testing"
 
@@ -92,6 +93,77 @@ func (tt excludeGroupTest) Test(t *testing.T) {
 	got := excludeGroup(tt.apiGroup, tt.options)
 	if got != tt.want {
 		t.Errorf("excludeGroup() = %v, want %v", got, tt.want)
+	}
+}
+
+func TestExcludeGroupResource(t *testing.T) {
+	t.Parallel()
+
+	apiGroup := &metav1.APIGroup{
+		Name: "apps",
+		Versions: []metav1.GroupVersionForDiscovery{
+			{GroupVersion: "apps/v1", Version: "v1"},
+		},
+		PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "apps/v1", Version: "v1"},
+	}
+
+	baseResource := groupResource{
+		APIGroup:        apiGroup,
+		APIGroupVersion: "apps/v1",
+		APIResource: &metav1.APIResource{
+			Name:       "deployments",
+			Namespaced: true,
+			Kind:       "Deployment",
+		},
+		Preferred:   true,
+		Subresource: false,
+	}
+
+	subresource := groupResource{
+		APIGroup:        apiGroup,
+		APIGroupVersion: "apps/v1",
+		APIResource: &metav1.APIResource{
+			Name:       "deployments/status",
+			Namespaced: true,
+		},
+		Preferred:   true,
+		Subresource: true,
+	}
+
+	t.Run("BaseResourceIncludedByDefault", excludeGroupResourceTest{
+		resource: baseResource,
+		options:  NewTestOptionsBuilder().APIResourceVersionsOptions(),
+		want:     false, // Should not be excluded.
+	}.Test)
+	t.Run("SubresourceExcludedByDefault", excludeGroupResourceTest{
+		resource: subresource,
+		options:  NewTestOptionsBuilder().APIResourceVersionsOptions(),
+		want:     true, // Should be excluded because subresources are not included by default.
+	}.Test)
+	t.Run("SubresourceIncludedWithFlag", excludeGroupResourceTest{
+		resource: subresource,
+		options:  NewTestOptionsBuilder().SetIncludeSubresources(true).APIResourceVersionsOptions(),
+		want:     false, // Should not be excluded when flag is set.
+	}.Test)
+	t.Run("BaseResourceIncludedWithFlag", excludeGroupResourceTest{
+		resource: baseResource,
+		options:  NewTestOptionsBuilder().SetIncludeSubresources(true).APIResourceVersionsOptions(),
+		want:     false, // Should not be excluded.
+	}.Test)
+}
+
+type excludeGroupResourceTest struct {
+	resource groupResource
+	options  *apiResourceVersionsOptions
+	want     bool
+}
+
+func (tt excludeGroupResourceTest) Test(t *testing.T) {
+	t.Parallel()
+
+	got := excludeGroupResource(tt.resource, tt.options)
+	if got != tt.want {
+		t.Errorf("excludeGroupResource() = %v, want %v", got, tt.want)
 	}
 }
 
@@ -199,6 +271,91 @@ func (tt unversionedResourceNameTest) Test(t *testing.T) {
 		if *gotSub != *tt.subresourceName {
 			t.Errorf("unversionedResourceName() subresource = %v, want %v", *gotSub, *tt.subresourceName)
 		}
+	}
+}
+
+func TestFullname(t *testing.T) {
+	t.Parallel()
+
+	apiGroup := &metav1.APIGroup{
+		Name: "apps",
+		Versions: []metav1.GroupVersionForDiscovery{
+			{GroupVersion: "apps/v1", Version: "v1"},
+		},
+		PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "apps/v1", Version: "v1"},
+	}
+
+	coreAPIGroup := &metav1.APIGroup{
+		Name: "",
+		Versions: []metav1.GroupVersionForDiscovery{
+			{GroupVersion: "v1", Version: "v1"},
+		},
+		PreferredVersion: metav1.GroupVersionForDiscovery{GroupVersion: "v1", Version: "v1"},
+	}
+
+	t.Run("BaseResourceWithGroup", fullnameTest{
+		resource: groupResource{
+			APIGroup:        apiGroup,
+			APIGroupVersion: "apps/v1",
+			APIResource: &metav1.APIResource{
+				Name:       "deployments",
+				Namespaced: true,
+				Kind:       "Deployment",
+			},
+			Subresource: false,
+		},
+		want: "deployments.v1.apps",
+	}.Test)
+	t.Run("SubresourceWithGroup", fullnameTest{
+		resource: groupResource{
+			APIGroup:        apiGroup,
+			APIGroupVersion: "apps/v1",
+			APIResource: &metav1.APIResource{
+				Name:       "deployments/status",
+				Namespaced: true,
+			},
+			Subresource: true,
+		},
+		want: "deployments.v1.apps status",
+	}.Test)
+	t.Run("CoreResource", fullnameTest{
+		resource: groupResource{
+			APIGroup:        coreAPIGroup,
+			APIGroupVersion: "v1",
+			APIResource: &metav1.APIResource{
+				Name:       "pods",
+				Namespaced: true,
+				Kind:       "Pod",
+			},
+			Subresource: false,
+		},
+		want: "pods.v1.",
+	}.Test)
+	t.Run("CoreSubresource", fullnameTest{
+		resource: groupResource{
+			APIGroup:        coreAPIGroup,
+			APIGroupVersion: "v1",
+			APIResource: &metav1.APIResource{
+				Name:       "pods/status",
+				Namespaced: true,
+			},
+			Subresource: true,
+		},
+		want: "pods.v1. status",
+	}.Test)
+}
+
+type fullnameTest struct {
+	resource groupResource
+	want     string
+}
+
+func (tt fullnameTest) Test(t *testing.T) {
+	t.Parallel()
+
+	got := tt.resource.fullname()
+	if got != tt.want {
+		t.Errorf("fullname() = %v, want %v", got, tt.want)
 	}
 }
 
@@ -318,6 +475,60 @@ func TestGetGroupResources(t *testing.T) {
 		wantResourcesCount: 0,   // No resources should be found for a non-existent group.
 		wantErr:            nil, // No error expected, just an empty result.
 	}.Test)
+	t.Run("GetAllWithSubresources", getGroupResourcesCountTest{
+		options: NewTestOptionsBuilder().SetIncludeSubresources(true).APIResourceVersionsOptions(),
+		// There are 13 base resources + 21 subresources in the test data.
+		wantResourcesCount: 34,
+	}.Test)
+	t.Run("GetCoreSubresources", getGroupResourcesNamesTest{
+		options: NewTestOptionsBuilder().
+			SetAPIGroup("").
+			SetIncludeSubresources(true).
+			APIResourceVersionsOptions(),
+		wantResourcesNames: []string{
+			"configmaps.v1.",
+			"events.v1.",
+			"namespaces.v1.",
+			"namespaces.v1. finalize",
+			"namespaces.v1. status",
+			"nodes.v1.",
+			"nodes.v1. proxy",
+			"nodes.v1. status",
+			"persistentvolumeclaims.v1.",
+			"persistentvolumeclaims.v1. status",
+			"persistentvolumes.v1.",
+			"persistentvolumes.v1. status",
+			"pods.v1.",
+			"pods.v1. attach",
+			"pods.v1. binding",
+			"pods.v1. ephemeralcontainers",
+			"pods.v1. eviction",
+			"pods.v1. exec",
+			"pods.v1. log",
+			"pods.v1. portforward",
+			"pods.v1. proxy",
+			"pods.v1. status",
+			"secrets.v1.",
+			"serviceaccounts.v1.",
+			"serviceaccounts.v1. token",
+			"services.v1.",
+			"services.v1. proxy",
+			"services.v1. status",
+		},
+	}.Test)
+	t.Run("SubresourceExcludedByDefault", getGroupResourcesTest{
+		options: NewTestOptionsBuilder().SetAPIGroup("").APIResourceVersionsOptions(),
+		// Verify that resources like "pods/status" are not included.
+		shouldNotContain: []string{"pods/status", "namespaces/status", "nodes/status"},
+	}.Test)
+	t.Run("SubresourceIncludedWithFlag", getGroupResourcesTest{
+		options: NewTestOptionsBuilder().
+			SetAPIGroup("").
+			SetIncludeSubresources(true).
+			APIResourceVersionsOptions(),
+		// Verify that resources like "pods/status" are included.
+		shouldContain: []string{"pods/status", "namespaces/status", "nodes/status"},
+	}.Test)
 }
 
 type getGroupResourcesCountTest struct {
@@ -367,6 +578,41 @@ func (tt getGroupResourcesNamesTest) Test(t *testing.T) {
 	}
 }
 
+type getGroupResourcesTest struct {
+	options          *apiResourceVersionsOptions
+	shouldContain    []string
+	shouldNotContain []string
+	wantErr          error
+}
+
+func (tt getGroupResourcesTest) Test(t *testing.T) {
+	t.Parallel()
+
+	got, err := getGroupResources(tt.options)
+	if !errors.Is(err, tt.wantErr) {
+		t.Fatalf("getGroupResources() error = %v, wantErr %v", err, tt.wantErr)
+	}
+
+	gotNames := make([]string, len(got))
+	for i, resource := range got {
+		gotNames[i] = resource.APIResource.Name
+	}
+
+	for _, name := range tt.shouldContain {
+		if !slices.Contains(gotNames, name) {
+			t.Errorf("getGroupResources() should contain %q, but it was not found. Got: %v", name, gotNames)
+		}
+	}
+
+	for _, name := range tt.shouldNotContain {
+		for _, gotName := range gotNames {
+			if gotName == name {
+				t.Errorf("getGroupResources() should not contain %q, but it was found. Got: %v", name, gotNames)
+			}
+		}
+	}
+}
+
 // TestPrintFunctions tests output formatting.
 func TestPrintFunctions(t *testing.T) {
 	t.Parallel()
@@ -396,7 +642,29 @@ func TestPrintFunctions(t *testing.T) {
 			Verbs:        []string{"get", "list", "watch"},
 			Categories:   []string{"all"},
 		},
-		Preferred: true,
+		Preferred:   true,
+		Subresource: false,
+	}
+
+	sampleSubresource := groupResource{
+		APIGroup: &metav1.APIGroup{
+			Name: "apps",
+			PreferredVersion: metav1.GroupVersionForDiscovery{
+				GroupVersion: "apps/v1",
+				Version:      "v1",
+			},
+		},
+		APIGroupVersion: "apps/v1",
+		APIResource: &metav1.APIResource{
+			Name:       "deployments/status",
+			ShortNames: []string{},
+			Namespaced: true,
+			Kind:       "Deployment",
+			Verbs:      []string{"get", "patch", "update"},
+			Categories: []string{},
+		},
+		Preferred:   true,
+		Subresource: true,
 	}
 
 	tests := []testCase{
@@ -418,6 +686,25 @@ func TestPrintFunctions(t *testing.T) {
 			output:   nameOutput,
 			resource: sampleResource,
 			want:     "deployments.v1.apps\n",
+		},
+		{
+			name:     "subresource default output",
+			output:   "",
+			resource: sampleSubresource,
+			want:     "deployments/status    apps/v1  true  Deployment  true\n",
+		},
+		{
+			name:     "subresource wide output",
+			output:   wideOutput,
+			resource: sampleSubresource,
+			want: "deployments/status    apps/v1  true  Deployment  true  " +
+				"true  get,patch,update  \n",
+		},
+		{
+			name:     "subresource name output",
+			output:   nameOutput,
+			resource: sampleSubresource,
+			want:     "deployments.v1.apps status\n",
 		},
 	}
 

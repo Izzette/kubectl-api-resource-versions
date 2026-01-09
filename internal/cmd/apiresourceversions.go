@@ -109,6 +109,8 @@ func NewCmdAPIResourceVersions(
 		"Limit to resources that belong to the specified categories.")
 	cmd.Flags().BoolVar(&options.Preferred, "preferred", options.Preferred,
 		"Filter resources by whether their version is in the server preferred resources.")
+	cmd.Flags().BoolVar(&options.IncludeSubresources, "include-subresources", options.IncludeSubresources,
+		"Include subresources in the output.")
 	configFlags.AddFlags(cmd.Flags())
 
 	return cmd
@@ -118,15 +120,16 @@ func NewCmdAPIResourceVersions(
 type apiResourceVersionsOptions struct {
 	genericiooptions.IOStreams
 
-	Output     string
-	SortBy     string
-	APIGroup   string
-	Namespaced bool
-	Verbs      []string
-	NoHeaders  bool
-	Cached     bool
-	Categories []string
-	Preferred  bool
+	Output              string
+	SortBy              string
+	APIGroup            string
+	Namespaced          bool
+	Verbs               []string
+	NoHeaders           bool
+	Cached              bool
+	Categories          []string
+	Preferred           bool
+	IncludeSubresources bool
 
 	groupChanged     bool
 	nsChanged        bool
@@ -153,6 +156,8 @@ type groupResource struct {
 	APIResource *metav1.APIResource
 	// Preferred if this is the preferred version for the resource.
 	Preferred bool
+	// Subresource is true if this resource is a subresource.
+	Subresource bool
 }
 
 // PreferredGroupVersion returns true if the version is the preferred version for the API group.
@@ -170,7 +175,14 @@ func (gr groupResource) fullname() string {
 		panic(fmt.Sprintf("group version %s does not match group %s", groupVersion.Group, gr.APIGroup.Name))
 	}
 
-	return fmt.Sprintf("%s.%s.%s", gr.APIResource.Name, groupVersion.Version, gr.APIGroup.Name)
+	baseName, subName := splitResourceName(gr.APIResource.Name)
+
+	fullname := fmt.Sprintf("%s.%s.%s", baseName, groupVersion.Version, gr.APIGroup.Name)
+	if subName != nil {
+		fullname = fmt.Sprintf("%s %s", fullname, *subName)
+	}
+
+	return fullname
 }
 
 // errWrongOutput is a returned when the output format is not supported.
@@ -359,10 +371,6 @@ func processGroupResources(
 			apiResource.Group = group.Name // Why is this not set?
 
 			resourceName, subresourceName := unversionedResourceName(apiResource)
-			if subresourceName != nil {
-				// If the resource is a subresource, we skip it.
-				continue
-			}
 
 			preferredVersion, ok := preferredResources[resourceName]
 			preferred := ok && preferredVersion == version.Version
@@ -372,6 +380,7 @@ func processGroupResources(
 				APIGroupVersion: version.GroupVersion,
 				APIResource:     &apiResource,
 				Preferred:       preferred,
+				Subresource:     subresourceName != nil,
 			}
 
 			if !excludeGroupResource(resource, options) {
@@ -396,11 +405,6 @@ func excludeGroup(group *metav1.APIGroup, options *apiResourceVersionsOptions) b
 //
 //nolint:cyclop
 func excludeGroupResource(resource groupResource, options *apiResourceVersionsOptions) bool {
-	if strings.Contains(resource.APIResource.Name, "/") {
-		// If the resource name contains a slash, it is a subresource and we skip it.
-		return true
-	}
-
 	if options.nsChanged && options.Namespaced != resource.APIResource.Namespaced {
 		return true
 	}
@@ -414,6 +418,10 @@ func excludeGroupResource(resource groupResource, options *apiResourceVersionsOp
 	}
 
 	if options.preferredChanged && options.Preferred != resource.Preferred {
+		return true
+	}
+
+	if !options.IncludeSubresources && resource.Subresource {
 		return true
 	}
 
