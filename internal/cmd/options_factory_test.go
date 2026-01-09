@@ -120,3 +120,13 @@ func (o *APIResourceVersionsOptionsBuilder) SetPreferred(preferred bool) *APIRes
 
 	return o
 }
+
+// SetIncludeSubresources sets whether to include subresources in the output, see
+// [apiResourceVersionsOptions.IncludeSubresources].
+func (o *APIResourceVersionsOptionsBuilder) SetIncludeSubresources(
+	includeSubresources bool,
+) *APIResourceVersionsOptionsBuilder {
+	o.options.IncludeSubresources = includeSubresources
+
+	return o
+}
