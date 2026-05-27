@@ -417,7 +417,7 @@ When using `--include-subresources`, subresources are formatted with a space sep
 <resource>.<version>.<group> <subresource>
 ```
 
-This enables direct use with `kubectl` commands for subresources
+This enables direct use with `kubectl` commands for subresources.
 For example, we can get the status of all non-namespaced resources like so:
 ```shell
 kubectl api-resource-versions --include-subresources --namespaced=false --output=name | while read resource subresource; do
